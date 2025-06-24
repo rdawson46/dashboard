@@ -36,7 +36,12 @@ type Server struct {
 }
 
 func NewServer(config ServerConfig) *Server {
-    logger := log.New(os.Stderr)
+    logger := log.NewWithOptions(os.Stderr, log.Options{
+        ReportCaller: true,
+        ReportTimestamp: true,
+        TimeFormat: time.Kitchen,
+    })
+
     return &Server{
         config: config,
         logger: logger,
@@ -60,6 +65,25 @@ func (s *Server) rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
     }
 }
 
+func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        start := time.Now()
+        log.Info("Incoming request",
+            "method", r.Method,
+            "path", r.URL.Path,
+            "remote", r.RemoteAddr,
+        )
+
+        next.ServeHTTP(w, r)
+
+        duration := time.Since(start)
+        log.Info("Request handled",
+            "method", r.Method,
+            "path", r.URL.Path,
+            "duration", duration,
+        )
+    })
+}
 // ==========================================
 
 
@@ -67,16 +91,17 @@ func (s *Server) rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
 // ========== SERVER FUNCTIONS ==========
 
 func (s *Server) Start() error {
-    mux := http.NewServeMux()
-
-    // mux.HandleFunc
-
     s.httpServer = &http.Server{
         Addr: fmt.Sprintf(":%d", s.config.Port),
-        Handler: mux,
         ReadTimeout: 5 * time.Second,
         WriteTimeout: 10 * time.Second,
     }
+
+    mux := http.NewServeMux()
+    addRoutes(mux, s)
+    loggedMux := s.loggingMiddleware(mux)
+
+    s.httpServer.Handler = loggedMux
 
     go func() {
         s.logger.Infof("Started listening on port %d", s.config.Port)

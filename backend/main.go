@@ -1,12 +1,13 @@
 package main
 
 import (
-    "log"
-    "os"
-    "os/signal"
-    "syscall"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
-    "github.com/rdawson46/dashboard/server"
+	"github.com/joho/godotenv"
+	"github.com/rdawson46/dashboard/server"
 )
 
 func run() error {
@@ -25,7 +26,12 @@ func run() error {
 }
 
 func main() {
+    err := godotenv.Load()
+    if err != nil {
+        log.Fatal("Error loading .env file:", err)
+    }
+
     if err := run(); err != nil {
-        log.Fatal(err)
+        log.Fatal("Error running server:", err)
     }
 }

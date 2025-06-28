@@ -3,14 +3,14 @@ package server
 import (
     "context"
     "database/sql"
-    "encoding/json"
+    // "encoding/json"
     "errors"
     "fmt"
-    "net/http"
-    "strconv"
+    // "net/http"
+    // "strconv"
     "time"
 
-	"github.com/charmbracelet/log"
+	// "github.com/charmbracelet/log"
     _ "modernc.org/sqlite"
 )
 
@@ -36,9 +36,11 @@ var (
 )
 
 type UserRepository interface {
+    /*
     GetUser(ctx context.Context, id int64) (*User, error)
     GetUsers(ctx context.Context, limit, offset int64) ([]*User, error)
     GetUserCount(ctx context.Context) (int64, error)
+    */
 }
 
 type sqliteUserRepo struct {
@@ -49,12 +51,12 @@ func NewUserRepository(db *sql.DB) UserRepository {
     return &sqliteUserRepo{db: db}
 }
 
-func (r *sqliteUserRepo) GetUser(ctx context.Context, id int64) (*User, error) {
+func (r *sqliteUserRepo) GetUser(ctx context.Context, id int64) (*User_db, error) {
     query := `SELECT id, name, email, created_at FROM users WHERE id = ?`
 
     row := r.db.QueryRowContext(ctx, query, id)
 
-    var user User
+    var user User_db
     err := row.Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt)
     if err != nil {
         if errors.Is(err, sql.ErrNoRows) {
@@ -66,7 +68,7 @@ func (r *sqliteUserRepo) GetUser(ctx context.Context, id int64) (*User, error) {
     return &user, nil
 }
 
-func (r *sqliteUserRepo) GetUsers(ctx context.Context, limit, offset int64) ([]*User, error){
+func (r *sqliteUserRepo) GetUsers(ctx context.Context, limit, offset int64) ([]*User_db, error){
     query := `SELECT id, name, email, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?`
 
     rows, err := r.db.QueryContext(ctx, query, limit, offset)
@@ -76,9 +78,9 @@ func (r *sqliteUserRepo) GetUsers(ctx context.Context, limit, offset int64) ([]*
     }
     defer rows.Close()
 
-    var users []*User
+    var users []*User_db
     for rows.Next() {
-        var user User
+        var user User_db
         err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt)
 
         if err != nil {

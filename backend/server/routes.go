@@ -54,6 +54,7 @@ func search(w http.ResponseWriter, r *http.Request) {
 
 type User struct {
     Username string `json:"username"`
+    ID int `json:"id"`
 }
 
 
@@ -150,11 +151,11 @@ func (manager *JWTManager) AuthMiddleware(next http.HandlerFunc) http.HandlerFun
 
         if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
             http.Error(w, "Invalid authorization header format", http.StatusUnauthorized)
+            http.Redirect(w, r, "/login", http.StatusUnauthorized)
             return
         }
 
         tokenString := tokenParts[1]
-
         claims, err := manager.ValidateToken(tokenString)
 
         if err != nil {
@@ -220,6 +221,96 @@ func userFromContext(ctx context.Context) (*User, bool) {
     return user, ok
 }
 
+func loginHandler(jwtManager *JWTManager) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        if r.Method != http.MethodPost {
+            http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+            return
+        }
+
+        var loginReq struct {
+            Username string `json:"username"`
+            Password string `json:"password"`
+        }
+
+        if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
+            http.Error(w, "Invalid JSON", http.StatusBadRequest)
+            return
+        }
+
+        // TODO: add db logic
+        if loginReq.Username == "admin" && loginReq.Password == "password" {
+            user := &User{
+                Username: "admin", 
+                ID: 1,
+            }
+
+            token, err := jwtManager.GenerateToken(user)
+            if err != nil {
+                http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+                return
+            }
+
+            jwtManager.SetTokenCookie(w, token)
+            w.WriteHeader(http.StatusOK)
+        } else {
+            fmt.Printf("username: %s, password: %s\n", loginReq.Username, loginReq.Password)
+            http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+        }
+    }
+}
+
+func logoutHandler(jwtManager *JWTManager) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        jwtManager.ClearTokenCookie(w)
+        w.WriteHeader(http.StatusOK)
+        json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
+    }
+}
+
+func refreshHandler(jwtManager *JWTManager) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        authHeader := r.Header.Get("Authorization")
+        if authHeader == "" {
+            http.Error(w, "Authorization header required", http.StatusUnauthorized)
+            return
+        }
+
+        tokeParts := strings.Split(authHeader, " ")
+        if len(tokeParts) != 2 || tokeParts[0] != "Bearer" {
+            http.Error(w, "Invalid header format", http.StatusUnauthorized)
+            return
+        }
+
+        newToken, err := jwtManager.RefreshToken(tokeParts[1])
+        if err != nil {
+            http.Error(w, "Failed to refresh token: "+err.Error(), http.StatusUnauthorized)
+            return
+        }
+
+        jwtManager.SetTokenCookie(w, newToken)
+        w.WriteHeader(http.StatusOK)
+    }
+}
+
+/*
+func protectedHandler(w http.ResponseWriter, r *http.Request) {
+    user, ok := userFromContext(r.Context())
+
+    if !ok {
+        http.Error(w, "User not found in context", http.StatusInternalServerError)
+        return
+    }
+
+    response := map[string]any {
+        "message": "this is a protected endopoint",
+        "user": user,
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
+}
+*/
 
 // =======================================
 
@@ -228,9 +319,6 @@ func userFromContext(ctx context.Context) (*User, bool) {
 // need to setup the jwt middleware
     // either in this file or server
 func register(w http.ResponseWriter, r *http.Request) {}
-func login(w http.ResponseWriter, r *http.Request) {}
-func logout(w http.ResponseWriter, r *http.Request) {}
-func refresh(w http.ResponseWriter, r *http.Request) {}
 func dashboard(w http.ResponseWriter, r *http.Request) {}
 
 // =======================================
@@ -241,23 +329,27 @@ func dashboard(w http.ResponseWriter, r *http.Request) {}
 // TODO: set up and api handler
 
 func addRoutes(h *http.ServeMux, s *Server) {
-    h.HandleFunc("/", index)
-    h.HandleFunc("/health", healthCheck)
-    h.HandleFunc("/login", login)
-    h.HandleFunc("/logout", logout)
-    h.HandleFunc("/register", register)
-    h.HandleFunc("/reresh", refresh)
-
-    // protected routes
     jwt_manager := NewJWTManager("test_key", time.Minute*10)
 
-    // limited routes: TODO: will need to wrap with jwt
-    h.HandleFunc("/dashboard", jwt_manager.AuthMiddleware(
-        s.rateLimitMiddleware(search),
-    ))
+
+    // basic routes
+    h.HandleFunc("/", index)
+    h.HandleFunc("/health", healthCheck)
+
+    // user status routes
+    h.HandleFunc("/login", loginHandler(jwt_manager))
+    h.HandleFunc("/logout", logoutHandler(jwt_manager))
+    h.HandleFunc("/reresh", refreshHandler(jwt_manager))
+    // TODO:
+    h.HandleFunc("/register", register)
 
 
+    // application routes
     // TODO: api handler and middleware
+    h.HandleFunc("/dashboard", jwt_manager.AuthMiddleware(
+        s.rateLimitMiddleware(dashboard),
+    ))
+    /*
     h.HandleFunc("api/search", jwt_manager.AuthMiddleware(
         s.rateLimitMiddleware(search),
     ))
@@ -265,6 +357,7 @@ func addRoutes(h *http.ServeMux, s *Server) {
     h.HandleFunc("api/chat", jwt_manager.AuthMiddleware(
         s.rateLimitMiddleware(chat),
     ))
+    */
 }
 
 // =======================================

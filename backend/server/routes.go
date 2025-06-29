@@ -16,10 +16,6 @@ type HealthResponse struct {
     Status string `json:"status"`
 }
 
-type TestResponse struct {
-    Message string `json:"status"`
-}
-
 // =====================================
 
 
@@ -36,19 +32,21 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(response)
 }
 
+/*
 func chat(w http.ResponseWriter, r *http.Request) {
-    response := TestResponse{Message: "chat"}
+    response := map[string]string{"message": "chat"}
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(response)
 }
 
 func search(w http.ResponseWriter, r *http.Request) {
-    response := TestResponse{Message: "search"}
+    response := map[string]string{"message": "chat"}
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(response)
 }
+*/
 
 // ========== JWT (temp) FUNCTIONS ==========
 
@@ -93,7 +91,7 @@ func (manager *JWTManager) GenerateToken(user *User) (string, error) {
 }
 
 func (manager *JWTManager) ValidateToken(tokenString string) (*Claims, error) {
-    token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+    token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
         if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
             return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
         }
@@ -136,27 +134,21 @@ func (manager  *JWTManager) RefreshToken(tokenString string) (string, error) {
     return token.SignedString(manager.secretKey)
 }
 
+// TODO: split between api and page routing handlers
 func (manager *JWTManager) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        authHeader := r.Header.Get("Authorization")
+        token, err := manager.GetTokenFromCookie(r)
 
-        if authHeader == "" {
-            // TODO: split between api and page routing handlers
-            http.Error(w, "Authorization required", http.StatusUnauthorized)
-            http.Redirect(w, r, "/login", http.StatusUnauthorized)
+        if err != nil {
+            if err == http.ErrNoCookie {
+                http.Error(w, "Unauthorized: No session cookie found", http.StatusUnauthorized)
+                return
+            }
+            http.Error(w, "Bad request", http.StatusUnauthorized)
             return
         }
 
-        tokenParts := strings.Split(authHeader, " ")
-
-        if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-            http.Error(w, "Invalid authorization header format", http.StatusUnauthorized)
-            http.Redirect(w, r, "/login", http.StatusUnauthorized)
-            return
-        }
-
-        tokenString := tokenParts[1]
-        claims, err := manager.ValidateToken(tokenString)
+        claims, err := manager.ValidateToken(token)
 
         if err != nil {
             http.Error(w, "Invalid Token", http.StatusUnauthorized)
@@ -314,11 +306,28 @@ func protectedHandler(w http.ResponseWriter, r *http.Request) {
 
 // =======================================
 
-// TODO: will require jwt set up and the db
-// set up basic UI and chats
-// need to setup the jwt middleware
-    // either in this file or server
+/*
+TODO: 
+
+* better logging
+* set up a generic UI for testing 
+    * send file and then routing through Vue
+    * or through html (not sold on Vue routing)
+* move jwt stuff to a new file
+* create the dashboard routing
+* set up the db
+* create db methods
+* set up Ollama client
+* api auth handler
+
+*/
+
+// WARN: requires the db to be set up
+// and better user struct
 func register(w http.ResponseWriter, r *http.Request) {}
+
+
+// FIX: will have to think about what this does and how to handle
 func dashboard(w http.ResponseWriter, r *http.Request) {}
 
 // =======================================

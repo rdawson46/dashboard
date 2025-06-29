@@ -1,14 +1,10 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
 // ========== ROUTING STRUCTS ==========
@@ -32,7 +28,6 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(response)
 }
 
-/*
 func chat(w http.ResponseWriter, r *http.Request) {
     response := map[string]string{"message": "chat"}
     w.Header().Set("Content-Type", "application/json")
@@ -45,172 +40,6 @@ func search(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(response)
-}
-*/
-
-// ========== JWT (temp) FUNCTIONS ==========
-
-type User struct {
-    Username string `json:"username"`
-    ID int `json:"id"`
-}
-
-
-type Claims struct {
-    Username string `json:"username"`
-    jwt.RegisteredClaims
-}
-
-type JWTManager struct {
-    secretKey []byte
-    tokenDuration time.Duration
-}
-
-func NewJWTManager(secretKey string, tokenDuration time.Duration) *JWTManager {
-    return &JWTManager{
-        secretKey: []byte(secretKey),
-        tokenDuration: tokenDuration,
-    }
-}
-
-func (manager *JWTManager) GenerateToken(user *User) (string, error) {
-    claims := &Claims{
-        Username: user.Username,
-        RegisteredClaims: jwt.RegisteredClaims{
-            ExpiresAt: jwt.NewNumericDate(time.Now().Add(manager.tokenDuration)),
-            IssuedAt: jwt.NewNumericDate(time.Now()),
-            NotBefore: jwt.NewNumericDate(time.Now()),
-            Issuer: "server",
-            Subject: user.Username,
-        },
-    }
-
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-    return token.SignedString(manager.secretKey)
-}
-
-func (manager *JWTManager) ValidateToken(tokenString string) (*Claims, error) {
-    token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
-        if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-            return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-        }
-
-        return manager.secretKey, nil
-    })
-
-    if err != nil {
-        return nil, err
-    }
-
-    claims, ok := token.Claims.(*Claims)
-
-    if !ok || !token.Valid {
-        return nil, fmt.Errorf("invalid token")
-    }
-
-    return claims, nil
-}
-
-func (manager  *JWTManager) RefreshToken(tokenString string) (string, error) {
-    claims, err := manager.ValidateToken(tokenString)
-
-    if err != nil {
-        return "", err
-    }
-
-    newClaims := &Claims{
-        Username: claims.Username,
-        RegisteredClaims: jwt.RegisteredClaims{
-            ExpiresAt: jwt.NewNumericDate(time.Now().Add(manager.tokenDuration)),
-            IssuedAt: jwt.NewNumericDate(time.Now()),
-            NotBefore: jwt.NewNumericDate(time.Now()),
-            Issuer: "server",
-            Subject: claims.Username,
-        },
-    }
-
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, newClaims)
-    return token.SignedString(manager.secretKey)
-}
-
-// TODO: split between api and page routing handlers
-func (manager *JWTManager) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        token, err := manager.GetTokenFromCookie(r)
-
-        if err != nil {
-            if err == http.ErrNoCookie {
-                http.Error(w, "Unauthorized: No session cookie found", http.StatusUnauthorized)
-                return
-            }
-            http.Error(w, "Bad request", http.StatusUnauthorized)
-            return
-        }
-
-        claims, err := manager.ValidateToken(token)
-
-        if err != nil {
-            http.Error(w, "Invalid Token", http.StatusUnauthorized)
-            return
-        }
-
-        r = r.WithContext(contextWithUser(r.Context(), &User{
-            Username: claims.Username,
-        }))
-
-        next(w, r)
-    }
-}
-
-func (manager *JWTManager) SetTokenCookie(w http.ResponseWriter, token string) {
-    cookie := &http.Cookie{
-        Name: "auth_token",
-        Value: token,
-        Expires: time.Now().Add(manager.tokenDuration),
-        HttpOnly: true,
-        Secure: true,
-        SameSite: http.SameSiteStrictMode,
-        Path: "/",
-    }
-
-    http.SetCookie(w, cookie)
-}
-
-func (manager *JWTManager) GetTokenFromCookie(r *http.Request) (string, error) {
-    cookie, err := r.Cookie("auth_token")
-
-    if err != nil {
-        return "", err
-    }
-    return cookie.Value, nil
-}
-
-func (manager *JWTManager) ClearTokenCookie(w http.ResponseWriter) {
-    cookie := &http.Cookie{
-        Name: "auth_token",
-        Value: "",
-        Expires: time.Now().Add(manager.tokenDuration),
-        HttpOnly: true,
-        Secure: true,
-        SameSite: http.SameSiteStrictMode,
-        Path: "/",
-    }
-
-    http.SetCookie(w, cookie)
-}
-
-type contextKey string
-
-const userContextKey contextKey = "user"
-
-func contextWithUser(ctx context.Context, user *User) context.Context {
-    return context.WithValue(ctx, userContextKey, user)
-}
-
-func userFromContext(ctx context.Context) (*User, bool) {
-    user, ok := ctx.Value(userContextKey).(*User)
-    return user, ok
 }
 
 func loginHandler(jwtManager *JWTManager) http.HandlerFunc {
@@ -260,21 +89,22 @@ func logoutHandler(jwtManager *JWTManager) http.HandlerFunc {
     }
 }
 
+// TODO: modify for cookies and figure where to trigger
 func refreshHandler(jwtManager *JWTManager) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        authHeader := r.Header.Get("Authorization")
-        if authHeader == "" {
-            http.Error(w, "Authorization header required", http.StatusUnauthorized)
+        token, err := jwtManager.GetTokenFromCookie(r)
+
+        if err != nil {
+            if err == http.ErrNoCookie {
+                http.Error(w, "Unauthorized: No session cookie found", http.StatusUnauthorized)
+                return
+            }
+            http.Error(w, "Bad request", http.StatusUnauthorized)
             return
         }
 
-        tokeParts := strings.Split(authHeader, " ")
-        if len(tokeParts) != 2 || tokeParts[0] != "Bearer" {
-            http.Error(w, "Invalid header format", http.StatusUnauthorized)
-            return
-        }
+        newToken, err := jwtManager.RefreshToken(token)
 
-        newToken, err := jwtManager.RefreshToken(tokeParts[1])
         if err != nil {
             http.Error(w, "Failed to refresh token: "+err.Error(), http.StatusUnauthorized)
             return
@@ -308,6 +138,10 @@ func protectedHandler(w http.ResponseWriter, r *http.Request) {
 
 /*
 TODO: 
+
+1. get an ollama client running
+2. set up the api/chat endpoint
+3. better logging ...
 
 * better logging
 * set up a generic UI for testing 
@@ -354,11 +188,11 @@ func addRoutes(h *http.ServeMux, s *Server) {
 
 
     // application routes
-    // TODO: api handler and middleware
     h.HandleFunc("/dashboard", jwt_manager.AuthMiddleware(
         s.rateLimitMiddleware(dashboard),
     ))
-    /*
+
+    // api auth handler
     h.HandleFunc("api/search", jwt_manager.AuthMiddleware(
         s.rateLimitMiddleware(search),
     ))
@@ -366,7 +200,6 @@ func addRoutes(h *http.ServeMux, s *Server) {
     h.HandleFunc("api/chat", jwt_manager.AuthMiddleware(
         s.rateLimitMiddleware(chat),
     ))
-    */
 }
 
 // =======================================

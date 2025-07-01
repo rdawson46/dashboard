@@ -2,9 +2,10 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
+
+	api "github.com/rdawson46/dashboard/api"
 )
 
 // ========== ROUTING STRUCTS ==========
@@ -28,8 +29,43 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(response)
 }
 
-func chat(w http.ResponseWriter, r *http.Request) {
-    response := map[string]string{"message": "chat"}
+func chatHandler(w http.ResponseWriter, r *http.Request) {
+    type request struct {
+        Query string `json:"query"`
+    }
+
+    var chatReq request
+    err := json.NewDecoder(r.Body).Decode(&chatReq)
+
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    // HACK: placed here temp
+    url := "http://10.0.2.2:11434"
+    ctx := r.Context()
+
+    if ctx == nil {
+        http.Error(w, "context is nil", http.StatusInternalServerError)
+        return
+    }
+
+    oc, err := api.NewOllamaClient(url, ctx)
+
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return 
+    }
+
+    res, err := oc.Chat(chatReq.Query)
+
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return 
+    }
+
+    response := map[string]string{"respones": res}
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(response)
@@ -75,7 +111,6 @@ func loginHandler(jwtManager *JWTManager) http.HandlerFunc {
             jwtManager.SetTokenCookie(w, token)
             w.WriteHeader(http.StatusOK)
         } else {
-            fmt.Printf("username: %s, password: %s\n", loginReq.Username, loginReq.Password)
             http.Error(w, "Invalid credentials", http.StatusUnauthorized)
         }
     }
@@ -197,9 +232,12 @@ func addRoutes(h *http.ServeMux, s *Server) {
         s.rateLimitMiddleware(search),
     ))
 
+    h.HandleFunc("/api/chat", chatHandler)
+    /*
     h.HandleFunc("api/chat", jwt_manager.AuthMiddleware(
         s.rateLimitMiddleware(chat),
     ))
+    */
 }
 
 // =======================================

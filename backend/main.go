@@ -11,7 +11,7 @@ import (
 )
 
 func run() error {
-    config := server.NewConfig(8000, 30, 10, 10)
+    config := server.NewConfig(8000, 300, 100, 100)
     s := server.NewServer(config)
 
     if err := s.Start(); err != nil {

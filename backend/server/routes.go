@@ -46,19 +46,14 @@ func chatHandler(w http.ResponseWriter, r *http.Request) {
     url := "http://10.0.2.2:11434"
     ctx := r.Context()
 
-    if ctx == nil {
-        http.Error(w, "context is nil", http.StatusInternalServerError)
-        return
-    }
-
-    oc, err := api.NewOllamaClient(url, ctx)
+    oc, err := api.NewOllamaClient(url)
 
     if err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return 
     }
 
-    res, err := oc.Chat(chatReq.Query)
+    res, err := oc.Chat(ctx, chatReq.Query)
 
     if err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest)

@@ -10,10 +10,9 @@ import (
 
 type OllamaClient struct {
     client *api.Client
-    ctx context.Context
 }
 
-func NewOllamaClient(_url string, ctx context.Context) (*OllamaClient, error) {
+func NewOllamaClient(_url string) (*OllamaClient, error) {
     u, err := url.Parse(_url)
     if err != nil {
         return nil, err
@@ -22,11 +21,10 @@ func NewOllamaClient(_url string, ctx context.Context) (*OllamaClient, error) {
     client := api.NewClient(u, http.DefaultClient)
     return &OllamaClient{
         client: client,
-        ctx: ctx,
     }, nil
 }
 
-func (oc OllamaClient) Chat(query string) (string, error) {
+func (oc OllamaClient) Chat(ctx context.Context, query string) (string, error) {
     req := &api.ChatRequest{
         Model: "qwen3:1.7b",
         Messages: []api.Message{
@@ -47,7 +45,7 @@ func (oc OllamaClient) Chat(query string) (string, error) {
     }
 
     var fullResponse string
-    err := oc.client.Chat(oc.ctx, req, func(resp api.ChatResponse) error {
+    err := oc.client.Chat(ctx, req, func(resp api.ChatResponse) error {
         fullResponse += resp.Message.Content
         return nil
     })

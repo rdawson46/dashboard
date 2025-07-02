@@ -223,16 +223,13 @@ func addRoutes(h *http.ServeMux, s *Server) {
     ))
 
     // api auth handler
-    h.HandleFunc("api/search", jwt_manager.AuthMiddleware(
+    h.HandleFunc("/api/search", jwt_manager.AuthApiMiddleware(
         s.rateLimitMiddleware(search),
     ))
 
-    h.HandleFunc("/api/chat", chatHandler)
-    /*
-    h.HandleFunc("api/chat", jwt_manager.AuthMiddleware(
-        s.rateLimitMiddleware(chat),
+    h.HandleFunc("/api/chat", jwt_manager.AuthApiMiddleware(
+        s.rateLimitMiddleware(chatHandler),
     ))
-    */
 }
 
 // =======================================

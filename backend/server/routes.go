@@ -1,10 +1,13 @@
 package server
 
+// TODO: add logging every where
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
+	ollama "github.com/ollama/ollama/api"
 	api "github.com/rdawson46/dashboard/api"
 )
 
@@ -66,7 +69,75 @@ func chatHandler(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(response)
 }
 
-func search(w http.ResponseWriter, r *http.Request) {
+// will work on to replace the chatHandler
+func streamHandler(w http.ResponseWriter, r *http.Request) {
+    // headers for SSE
+    w.Header().Set("Content-Type", "text/event-stream")
+    w.Header().Set("Cache-Control", "no-cache")
+    w.Header().Set("Connection", "keep-alive")
+    w.Header().Set("Access-Control", "*")
+
+    flusher, ok := w.(http.Flusher)
+
+    if !ok {
+        http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+        return
+    }
+
+    type request struct {
+        Query string `json:"query"`
+    }
+
+    var chatReq request
+    err := json.NewDecoder(r.Body).Decode(&chatReq)
+
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    // HACK: placed here temp
+    url := "http://10.0.2.2:11434"
+    ctx := r.Context()
+
+    oc, err := api.NewOllamaClient(url)
+
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return 
+    }
+
+    msgChan := make(chan ollama.ChatResponse)
+    errChan := make(chan error)
+
+    go oc.Stream(ctx, chatReq.Query, msgChan, errChan)
+
+    OuterLoop:
+    for {
+        select {
+        case resp, ok := <-msgChan:
+            if !ok {
+                break OuterLoop
+            }
+
+            fmt.Fprintf(w, "data: %v\n\n", resp)
+            flusher.Flush()
+        case err, ok := <- errChan:
+            if !ok {
+                break OuterLoop
+            }
+
+            // HACK: replace error message
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+    }
+
+    fmt.Fprintf(w, "data: %s\n\n", `{"done": true}`)
+    flusher.Flush()
+}
+
+func searchHandler(w http.ResponseWriter, r *http.Request) {
     response := map[string]string{"message": "chat"}
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
@@ -186,6 +257,9 @@ TODO:
 
 */
 
+// for returning the login page
+func loginPageHandler(w http.ResponseWriter, r *http.Request) {}
+
 // WARN: requires the db to be set up
 // and better user struct
 func register(w http.ResponseWriter, r *http.Request) {}
@@ -203,7 +277,6 @@ func dashboard(w http.ResponseWriter, r *http.Request) {}
 
 func addRoutes(h *http.ServeMux, s *Server) {
     jwt_manager := NewJWTManager("test_key", time.Minute*10)
-
 
     // basic routes
     h.HandleFunc("/", index)
@@ -224,12 +297,14 @@ func addRoutes(h *http.ServeMux, s *Server) {
 
     // api auth handler
     h.HandleFunc("/api/search", jwt_manager.AuthApiMiddleware(
-        s.rateLimitMiddleware(search),
+        s.rateLimitMiddleware(searchHandler),
     ))
 
     h.HandleFunc("/api/chat", jwt_manager.AuthApiMiddleware(
         s.rateLimitMiddleware(chatHandler),
     ))
+
+    h.HandleFunc("/api/stream", streamHandler)
 }
 
 // =======================================

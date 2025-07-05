@@ -126,7 +126,7 @@ func (manager *JWTManager) AuthMiddleware(next http.HandlerFunc) http.HandlerFun
 }
 
 // HACK: will have to decide when building the UI if the 2 auth funcs need seperation
-func (manager *JWTManager) AuthApiMiddelWare(next http.HandlerFunc) http.HandlerFunc {
+func (manager *JWTManager) AuthApiMiddleware(next http.HandlerFunc) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         token, err := manager.GetTokenFromCookie(r)
 

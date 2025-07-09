@@ -2,6 +2,7 @@
 </script>
 <script setup>
     import { ref, onMounted } from 'vue';
+    import { marked } from 'marked';
     /*
      TODO:
 
@@ -13,20 +14,6 @@
 
     const chatContainer = ref(null)
     const inputContainer = ref(null)
-
-
-    function handleToken(token, message) {
-        console.log(token)
-        /*
-        let curr = message.innerText
-        console.log(curr)
-        message.innerText = message.innerText + curr
-        console.log(message)
-        */
-
-        // TODO: markdown parsing
-        message.append(token)
-    }
 
     async function stream(url, body, message) {
         const response = await fetch(url, {
@@ -41,6 +28,7 @@
         const decoder = new TextDecoder();
 
         let buffer = '';
+        let fullResponse = '';
 
         try {
             while (true) {
@@ -63,7 +51,10 @@
                                 if (data.done) return
 
                                 let token = data.message.content
-                                handleToken(token, message)
+                                console.log(token)
+                                fullResponse += token;
+                                message.innerHTML = marked(fullResponse);
+                                chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
                             } catch (e) {
                                 return
                             }
@@ -169,6 +160,7 @@ button {
     max-width: 85%;
     width: fit-content;
     word-wrap: break-word;
+    text-align: left;
 }
 
 .user {

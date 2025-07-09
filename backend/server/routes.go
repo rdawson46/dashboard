@@ -120,9 +120,17 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
                 break OuterLoop
             }
 
-            fmt.Fprintf(w, "data: %v\n\n", resp)
+            // encode resp
+            b, err := json.Marshal(resp)
+
+            if err != nil {
+                http.Error(w, "failed to marshal resp", http.StatusInternalServerError)
+                return
+            }
+
+            fmt.Fprintf(w, "data: %s\n", b)
             flusher.Flush()
-        case err, ok := <- errChan:
+        case err, ok := <-errChan:
             if !ok {
                 break OuterLoop
             }

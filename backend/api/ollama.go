@@ -28,7 +28,8 @@ func NewOllamaClient(_url string) (*OllamaClient, error) {
 // simple for now but will progress in complexity and will need to work with
 func (oc OllamaClient) newRequest(query string, stream *bool) *api.ChatRequest {
     return &api.ChatRequest{
-        Model: "qwen3:1.7b",
+        // Model: "qwen3:1.7b",
+        Model: "gemma3:1b",
         Messages: []api.Message{
             {
                 Role: "system",

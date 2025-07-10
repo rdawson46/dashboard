@@ -2,7 +2,11 @@
 </script>
 <script setup>
     import { ref, onMounted } from 'vue';
-    import { marked } from 'marked';
+    import { Marked } from 'marked';
+    import { markedHighlight } from "marked-highlight";
+    import hljs from 'highlight.js';
+    import 'highlight.js/styles/rose-pine-moon.css';
+
     /*
      TODO:
 
@@ -14,6 +18,16 @@
 
     const chatContainer = ref(null)
     const inputContainer = ref(null)
+
+    const marked = new Marked(
+        markedHighlight({
+            langPrefix: 'hljs language-',
+            highlight(code, lang) {
+                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                return hljs.highlight(code, { language }).value;
+            }
+        })
+    );
 
     async function stream(url, body, message) {
         const response = await fetch(url, {
@@ -51,9 +65,8 @@
                                 if (data.done) return
 
                                 let token = data.message.content
-                                console.log(token)
                                 fullResponse += token;
-                                message.innerHTML = marked(fullResponse);
+                                message.innerHTML = marked.parse(fullResponse);
                                 chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
                             } catch (e) {
                                 return
@@ -89,8 +102,6 @@
         inputContainer.value.value = '';
 
         let messElem = addMessage('assistant', '')
-
-        console.log('streaming')
         await stream('/api/stream', {"query": chat}, messElem);
     }
 
@@ -139,6 +150,7 @@
     border: 1px solid #000000;
     border-radius: 5px;
     margin-right: 10px;
+    transition: border-color 0.2s ease;
 }
 
 button {
@@ -161,6 +173,7 @@ button {
     width: fit-content;
     word-wrap: break-word;
     text-align: left;
+    animation: fadeIn 0.3s ease-out;
 }
 
 .user {
@@ -171,7 +184,20 @@ button {
 }
 
 .assistant {
-    background-color: #2b5b6f;
+    /*background-color: #2b5b6f;*/
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+code {
+    border-radius: 15px;
 }
 
 </style>

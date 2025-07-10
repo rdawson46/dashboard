@@ -94,7 +94,8 @@ func (s *Server) Start() error {
     s.httpServer = &http.Server{
         Addr: fmt.Sprintf(":%d", s.config.Port),
         ReadTimeout: 5 * time.Second,
-        WriteTimeout: 10 * time.Second,
+        // disabled for longer responses
+        // WriteTimeout: 10 * time.Second,
     }
 
     mux := http.NewServeMux()

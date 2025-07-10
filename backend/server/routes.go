@@ -312,6 +312,7 @@ func addRoutes(h *http.ServeMux, s *Server) {
         s.rateLimitMiddleware(chatHandler),
     ))
 
+    // HACK: need to add auth around this
     h.HandleFunc("/api/stream", streamHandler)
 }
 

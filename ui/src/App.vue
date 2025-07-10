@@ -115,11 +115,11 @@
         <h3>Query Machine</h3>
         <div id="chat-container" ref="chatContainer"></div>
         <div class="input-area">
-            <input ref="inputContainer" type="text" id="message-input" placeholder="Type your message..." @keyup.enter="query">
+            <textarea ref="inputContainer" id="message-input" placeholder="Type your message..." @keydown.enter.exact.prevent="query"></textarea>
 
             <!--<button id="send-btn" @click='stream("/api/stream", {"query": "why is the sky blue"})'>Send</button>-->
-            <button id="send-btn" @click='query'>Send</button>
-            <button id="clear-btn">Clear Chat</button>
+            <!--<button id="send-btn" @click='query'>Send</button>
+            <button id="clear-btn">Clear Chat</button> -->
         </div>
     </div>
 </template>
@@ -128,7 +128,7 @@
 /* TODO: add transitions */
 #wrapper {
     height: 100vh;
-    max-width: 100%;
+    width: 100%;
     margin: 0 auto;
     padding: 20px;
     overflow-y: hidden;
@@ -136,7 +136,7 @@
 
 #chat-container {
     height: 75%;
-    width: 90%;
+    width: 95%;
     border-radius: 5px;
     padding: 10px;
     overflow-y: auto;
@@ -147,18 +147,40 @@
 #message-input {
     flex-grow: 1;
     padding: 10px;
-    border: 1px solid #000000;
-    border-radius: 5px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
     margin-right: 10px;
     transition: border-color 0.2s ease;
+    resize: none;
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+    min-height: 50px;
+    max-height: 200px;
+    overflow-y: auto;
+    width: 80%;
+}
+
+#message-input:focus {
+    outline: none;
+    border-color: #2b5b6f;
 }
 
 button {
     padding: 10px 15px;
     margin: 0 10px;
-    border: none;
-    border-radius: 5px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
     cursor: pointer;
+    background-color: transparent;
+    color: #303030;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+button:hover {
+    background-color: #2b5b6f;
+    color: white;
+    border-color: #2b5b6f;
 }
 
 </style>
@@ -169,7 +191,6 @@ button {
     padding: 8px 25px;
     margin-bottom: 10px;
     border-radius: 20px;
-    max-width: 85%;
     width: fit-content;
     word-wrap: break-word;
     text-align: left;
@@ -178,6 +199,7 @@ button {
 
 .user {
     color: #303030;
+    max-width: 85%;
     background-color: #cf6f6a;
     margin-left: auto;
     margin-right: 0;
@@ -185,6 +207,8 @@ button {
 
 .assistant {
     /*background-color: #2b5b6f;*/
+    margin-left: auto;
+    margin-right: auto;
 }
 
 @keyframes fadeIn {

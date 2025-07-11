@@ -85,7 +85,7 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     type request struct {
-        Query string `json:"query"`
+        Query []ollama.Message `json:"messages"`
     }
 
     var chatReq request
@@ -96,7 +96,7 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // HACK: placed here temp
+    // HACK: placed here temp, make env variable
     url := "http://10.0.2.2:11434"
     ctx := r.Context()
 
@@ -110,7 +110,7 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
     msgChan := make(chan ollama.ChatResponse)
     errChan := make(chan error)
 
-    go oc.Stream(ctx, chatReq.Query, msgChan, errChan)
+    go oc.Stream2(ctx, chatReq.Query, msgChan, errChan)
 
     OuterLoop:
     for {

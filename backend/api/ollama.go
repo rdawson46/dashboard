@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/url"
 
@@ -49,16 +48,26 @@ func (oc OllamaClient) newRequest(query string, stream *bool) *api.ChatRequest {
     }
 }
 
-// could be used for writing the responses
-func (oc OllamaClient) ChatWithWriter(ctx context.Context, query string, w io.Writer) error {
-    req := oc.newRequest(query, &[]bool{false}[0])
+func (oc OllamaClient) newRequestWithMessages(messages []api.Message, stream bool) *api.ChatRequest {
+    totalMessages := append([]api.Message{
+        {
+            Role: "system",
+            Content: "You are a helpful assistant that answers in a concise manner",
+        },
+    }, messages...)
 
-    err := oc.client.Chat(ctx, req, func(resp api.ChatResponse) error {
-        _, err := w.Write([]byte(resp.Message.Content))
-        return err
-    })
 
-    return err
+    return &api.ChatRequest{
+        // Model: "qwen3:1.7b",
+        Model: "gemma3:1b",
+        Messages: totalMessages,
+        Options: map[string]any{
+            "temperature": 0.7,
+            "top_k": 40,
+            "top_p": 0.9,
+        },
+        Stream: &[]bool{stream}[0],
+    }
 }
 
 func (oc OllamaClient) Chat(ctx context.Context, query string) (string, error) {
@@ -92,6 +101,23 @@ func (oc OllamaClient) Stream(ctx context.Context, query string, msgChan chan ap
         errChan <- err
     }
 }
+
+func (oc OllamaClient) Stream2(ctx context.Context, messages []api.Message, msgChan chan api.ChatResponse, errChan chan error) {
+    defer close(msgChan)
+    defer close(errChan)
+
+    req := oc.newRequestWithMessages(messages, true)
+
+    err := oc.client.Chat(ctx, req, func(resp api.ChatResponse) error {
+        msgChan <- resp
+        return nil
+    })
+
+    if err != nil {
+        errChan <- err
+    }
+}
+
 
 /*
 func main() {

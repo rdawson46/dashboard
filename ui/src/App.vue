@@ -7,6 +7,9 @@
     import hljs from 'highlight.js';
     import 'highlight.js/styles/rose-pine-moon.css';
 
+    // HACK: storing this in the front end 
+    let messages = [];
+
     /*
      TODO:
 
@@ -62,7 +65,13 @@
                             try {
                                 const data = JSON.parse(jsonStr)
 
-                                if (data.done) return
+                                if (data.done) {
+                                    messages.push({
+                                        'role': 'assistant',
+                                        'content': fullResponse,
+                                    })
+                                    return
+                                }
 
                                 let token = data.message.content
                                 fullResponse += token;
@@ -78,6 +87,7 @@
         } catch (error) {
             console.log(error)
         } finally {
+            console.log(messages)
             reader.releaseLock();
         }
     }
@@ -99,10 +109,15 @@
         if (chat === '') return;
 
         addMessage('user', chat);
+        messages.push({
+            'role': 'user',
+            'content': chat,
+        })
+        
         inputContainer.value.value = '';
 
         let messElem = addMessage('assistant', '')
-        await stream('/api/stream', {"query": chat}, messElem);
+        await stream('/api/stream', {"messages": messages}, messElem);
     }
 
     onMounted(() => {

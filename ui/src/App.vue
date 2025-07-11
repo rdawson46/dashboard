@@ -87,7 +87,6 @@
         } catch (error) {
             console.log(error)
         } finally {
-            console.log(messages)
             reader.releaseLock();
         }
     }
@@ -105,7 +104,7 @@
     }
 
     async function query() {
-        let chat = inputContainer.value.value.trim()
+        let chat = inputContainer.value.innerText.trim()
         if (chat === '') return;
 
         addMessage('user', chat);
@@ -114,7 +113,7 @@
             'content': chat,
         })
         
-        inputContainer.value.value = '';
+        inputContainer.value.innerText = '';
 
         let messElem = addMessage('assistant', '')
         await stream('/api/stream', {"messages": messages}, messElem);
@@ -127,14 +126,11 @@
 
 <template>
     <div id="wrapper">
-        <h3>Query Machine</h3>
+        <h1>Query Machine</h1>
         <div id="chat-container" ref="chatContainer"></div>
         <div class="input-area">
-            <textarea ref="inputContainer" id="message-input" placeholder="Type your message..." @keydown.enter.exact.prevent="query"></textarea>
-
-            <!--<button id="send-btn" @click='stream("/api/stream", {"query": "why is the sky blue"})'>Send</button>-->
-            <!--<button id="send-btn" @click='query'>Send</button>
-            <button id="clear-btn">Clear Chat</button> -->
+            <div ref="inputContainer" id="message-input" contenteditable="true" @keydown.enter.exact.prevent="query"></div>
+            <button id="send-btn" @click='query'>Send</button>
         </div>
     </div>
 </template>
@@ -159,13 +155,22 @@
     scroll-behavior: smooth;
 }
 
+.input-area {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 5px;
+    max-width: 60%;
+    place-items: left;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 #message-input {
     flex-grow: 1;
     padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 20px;
-    margin-right: 10px;
-    transition: border-color 0.2s ease;
+    border: none;
     resize: none;
     font-family: inherit;
     font-size: 1rem;
@@ -173,29 +178,26 @@
     min-height: 50px;
     max-height: 200px;
     overflow-y: auto;
-    width: 80%;
+    text-align: left;
 }
 
 #message-input:focus {
     outline: none;
-    border-color: #2b5b6f;
 }
 
 button {
     padding: 10px 15px;
     margin: 0 10px;
-    border: 1px solid #ccc;
+    border: none;
     border-radius: 20px;
     cursor: pointer;
-    background-color: transparent;
-    color: #303030;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    background-color: #2b5b6f;
+    color: white;
+    transition: background-color 0.2s ease;
 }
 
 button:hover {
-    background-color: #2b5b6f;
-    color: white;
-    border-color: #2b5b6f;
+    background-color: #1e4258;
 }
 
 </style>

@@ -6,6 +6,7 @@
     import { markedHighlight } from "marked-highlight";
     import hljs from 'highlight.js';
     import 'highlight.js/styles/rose-pine-moon.css';
+    import Sidebar from './components/sidebar.vue';
 
     // HACK: storing this in the front end 
     let messages = [];
@@ -59,6 +60,7 @@
                 buffer = lines.pop() || '';
 
                 for (const line of lines) {
+                    console.log(line)
                     if (line.startsWith("data: ")) {
                         const jsonStr = line.substring(6)
                         if (jsonStr.trim()) {
@@ -66,10 +68,14 @@
                                 const data = JSON.parse(jsonStr)
 
                                 if (data.done) {
+                                    // TODO: add to UI
+
+                                    console.log(data.eval_duration)
                                     messages.push({
                                         'role': 'assistant',
                                         'content': fullResponse,
                                     })
+
                                     return
                                 }
 
@@ -121,10 +127,12 @@
 
     onMounted(() => {
         // console.log(chatContainer.value)
+        inputContainer.value.focus()
     })
 </script>
 
 <template>
+    <Sidebar />
     <div id="wrapper">
         <h1>Query Machine</h1>
         <div id="chat-container" ref="chatContainer"></div>
@@ -147,12 +155,14 @@
 
 #chat-container {
     height: 75%;
-    width: 95%;
+    width: 80%;
     border-radius: 5px;
     padding: 10px;
     overflow-y: auto;
     margin-bottom: 10px;
     scroll-behavior: smooth;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .input-area {

@@ -19,6 +19,7 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
     // TODO: swap this out later
+    // will have to reach out to server to verify
     const token = localStorage.get('token')
 
     if ((to.path === '/login' || to.path === '/register') && token) {

@@ -228,7 +228,7 @@ func modelShowHandler(w http.ResponseWriter, r *http.Request) {
     resp, err := oc.GetShow(ctx, showReq.Model)
 
     if err != nil {
-        http.Error(w, "Error getting model details", http.StatusInternalServerError)
+        http.Error(w, fmt.Sprintf("Error getting model details for: %s", showReq.Model), http.StatusInternalServerError)
         return 
     }
 

@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/ollama/ollama/api"
+	ollamaModel "github.com/ollama/ollama/types/model"
 )
 
 type OllamaClient struct {
@@ -70,6 +71,39 @@ func (oc OllamaClient) newRequestWithMessages(messages []api.Message, stream boo
     }
 }
 
+func (oc OllamaClient) GetModelList(ctx context.Context) (*api.ListResponse, error) {
+    resp, err := oc.client.List(ctx)
+    return resp, err
+}
+
+type ShowResponse struct {
+    SystemInfo string
+    ModelInfo map[string]any
+    Capabilities  []ollamaModel.Capability
+    ProjectedInfo map[string]any
+}
+
+func (oc OllamaClient) GetShow(ctx context.Context, model string) (*ShowResponse, error) {
+    req := &api.ShowRequest {
+        Model: model,
+    }
+    // TODO: simplify response for UI, remove extra fields that won't be used
+    res, err := oc.client.Show(ctx, req)
+
+    if err != nil {
+        return nil, err
+    }
+
+    r := &ShowResponse {
+        SystemInfo: res.System,
+        ModelInfo: res.ModelInfo,
+        Capabilities: res.Capabilities,
+        ProjectedInfo: res.ProjectorInfo,
+    }
+
+    return r, err
+}
+
 func (oc OllamaClient) Chat(ctx context.Context, query string) (string, error) {
     req := oc.newRequest(query, &[]bool{false}[0])
 
@@ -86,23 +120,7 @@ func (oc OllamaClient) Chat(ctx context.Context, query string) (string, error) {
     return fullResponse, nil
 }
 
-func (oc OllamaClient) Stream(ctx context.Context, query string, msgChan chan api.ChatResponse, errChan chan error) {
-    defer close(msgChan)
-    defer close(errChan)
-
-    req := oc.newRequest(query, &[]bool{true}[0])
-
-    err := oc.client.Chat(ctx, req, func(resp api.ChatResponse) error {
-        msgChan <- resp
-        return nil
-    })
-
-    if err != nil {
-        errChan <- err
-    }
-}
-
-func (oc OllamaClient) Stream2(ctx context.Context, messages []api.Message, msgChan chan api.ChatResponse, errChan chan error) {
+func (oc OllamaClient) Stream(ctx context.Context, messages []api.Message, msgChan chan api.ChatResponse, errChan chan error) {
     defer close(msgChan)
     defer close(errChan)
 
@@ -117,44 +135,3 @@ func (oc OllamaClient) Stream2(ctx context.Context, messages []api.Message, msgC
         errChan <- err
     }
 }
-
-
-/*
-func main() {
-    url := "http://10.0.2.2:11434"
-    client, err := NewOllamaClient(url)
-
-    if err != nil {
-        fmt.Println(err.Error())
-        return
-    }
-
-    ctx := context.Background()
-
-    msgChan := make(chan api.ChatResponse)
-    errChan := make(chan error)
-    go client.Stream(ctx, "why is the sky blue?", msgChan, errChan)
-
-    fmt.Println("Starting")
-
-    for {
-        select {
-        case resp, ok := <- msgChan:
-            if !ok {
-                fmt.Println("done")
-                return
-            }
-            fmt.Println(resp.Message.Content)
-        case err, ok := <-errChan:
-            if !ok {
-                fmt.Println("done")
-                return
-            }
-            fmt.Printf("error occurred: %v\n", err)
-            return
-        case <-time.After(30 * time.Second):
-            fmt.Println("taken 30 seconds")
-        }
-    }
-}
-*/

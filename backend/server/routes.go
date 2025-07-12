@@ -8,6 +8,7 @@ import (
 	"time"
 
 	ollama "github.com/ollama/ollama/api"
+	"github.com/charmbracelet/log"
 	api "github.com/rdawson46/dashboard/api"
 )
 
@@ -70,33 +71,108 @@ func chatHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // will work on to replace the chatHandler
-func streamHandler(w http.ResponseWriter, r *http.Request) {
-    // headers for SSE
-    w.Header().Set("Content-Type", "text/event-stream")
-    w.Header().Set("Cache-Control", "no-cache")
-    w.Header().Set("Connection", "keep-alive")
-    w.Header().Set("Access-Control", "*")
+func streamHandler(l *log.Logger) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        if r.Method != http.MethodPost {
+            http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+            return
+        }
 
-    flusher, ok := w.(http.Flusher)
+        // headers for SSE
+        w.Header().Set("Content-Type", "text/event-stream")
+        w.Header().Set("Cache-Control", "no-cache")
+        w.Header().Set("Connection", "keep-alive")
+        w.Header().Set("Access-Control", "*")
 
-    if !ok {
-        http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+
+        flusher, ok := w.(http.Flusher)
+
+        if !ok {
+            http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+            return
+        }
+
+        type request struct {
+            Query []ollama.Message `json:"messages"`
+        }
+
+        var chatReq request
+        err := json.NewDecoder(r.Body).Decode(&chatReq)
+
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusBadRequest)
+            return
+        }
+
+        // HACK: placed here temp, make env variable
+        url := "http://10.0.2.2:11434"
+        ctx := r.Context()
+
+        oc, err := api.NewOllamaClient(url)
+
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusBadRequest)
+            return 
+        }
+
+        msgChan := make(chan ollama.ChatResponse)
+        errChan := make(chan error)
+
+        l.Info(
+            "Starting stream",
+            "remote", r.RemoteAddr,
+        )
+
+        go oc.Stream(ctx, chatReq.Query, msgChan, errChan)
+
+        token_count := 0
+        OuterLoop:
+        for {
+            select {
+            case resp, ok := <-msgChan:
+                if !ok {
+                    break OuterLoop
+                }
+
+                // encode resp
+                b, err := json.Marshal(resp)
+
+                if err != nil {
+                    http.Error(w, "failed to marshal resp", http.StatusInternalServerError)
+                    return
+                }
+
+                fmt.Fprintf(w, "data: %s\n", b)
+                flusher.Flush()
+                token_count++;
+            case err, ok := <-errChan:
+                if !ok {
+                    break OuterLoop
+                }
+
+                // HACK: replace error message
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
+        }
+
+        l.Info(
+            "Streaming finished",
+            "token_count", token_count,
+            "remote", r.RemoteAddr,
+        )
+
+        fmt.Fprintf(w, "data: %s\n\n", `{"done": true}`)
+        flusher.Flush()
+    }
+}
+
+func modelListHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
         return
     }
 
-    type request struct {
-        Query []ollama.Message `json:"messages"`
-    }
-
-    var chatReq request
-    err := json.NewDecoder(r.Body).Decode(&chatReq)
-
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
-        return
-    }
-
-    // HACK: placed here temp, make env variable
     url := "http://10.0.2.2:11434"
     ctx := r.Context()
 
@@ -107,43 +183,60 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
         return 
     }
 
-    msgChan := make(chan ollama.ChatResponse)
-    errChan := make(chan error)
+    resp, err := oc.GetModelList(ctx)
 
-    go oc.Stream2(ctx, chatReq.Query, msgChan, errChan)
-
-    OuterLoop:
-    for {
-        select {
-        case resp, ok := <-msgChan:
-            if !ok {
-                break OuterLoop
-            }
-
-            // encode resp
-            b, err := json.Marshal(resp)
-
-            if err != nil {
-                http.Error(w, "failed to marshal resp", http.StatusInternalServerError)
-                return
-            }
-
-            fmt.Fprintf(w, "data: %s\n", b)
-            flusher.Flush()
-        case err, ok := <-errChan:
-            if !ok {
-                break OuterLoop
-            }
-
-            // HACK: replace error message
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
+    if err != nil {
+        http.Error(w, "Internal Error", http.StatusInternalServerError)
+        return 
     }
 
-    fmt.Fprintf(w, "data: %s\n\n", `{"done": true}`)
-    flusher.Flush()
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(resp.Models)
 }
+
+// TODO: get model name
+func modelShowHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        return
+    }
+
+    // TODO: get model name from the request body
+    type request struct {
+        Model string `json:"model"`
+    }
+
+    var showReq request
+    err := json.NewDecoder(r.Body).Decode(&showReq)
+
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    url := "http://10.0.2.2:11434"
+    ctx := r.Context()
+
+    oc, err := api.NewOllamaClient(url)
+
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return 
+    }
+
+    resp, err := oc.GetShow(ctx, showReq.Model)
+
+    if err != nil {
+        http.Error(w, "Error getting model details", http.StatusInternalServerError)
+        return 
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(resp)
+}
+
 
 func searchHandler(w http.ResponseWriter, r *http.Request) {
     response := map[string]string{"message": "chat"}
@@ -248,19 +341,15 @@ func protectedHandler(w http.ResponseWriter, r *http.Request) {
 /*
 TODO: 
 
-1. get an ollama client running
-2. set up the api/chat endpoint
 3. better logging ...
 
 * better logging
 * set up a generic UI for testing 
     * send file and then routing through Vue
     * or through html (not sold on Vue routing)
-* move jwt stuff to a new file
 * create the dashboard routing
 * set up the db
 * create db methods
-* set up Ollama client
 * api auth handler
 
 */
@@ -284,7 +373,10 @@ func dashboard(w http.ResponseWriter, r *http.Request) {}
 // TODO: set up and api handler
 
 func addRoutes(h *http.ServeMux, s *Server) {
-    jwt_manager := NewJWTManager("test_key", time.Minute*10)
+    jwt_manager := NewJWTManager(
+        "test_key",
+        time.Minute*10,
+    )
 
     // basic routes
     h.HandleFunc("/", index)
@@ -313,7 +405,9 @@ func addRoutes(h *http.ServeMux, s *Server) {
     ))
 
     // HACK: need to add auth around this
-    h.HandleFunc("/api/stream", streamHandler)
+    h.HandleFunc("/api/stream", streamHandler(s.logger))
+    h.HandleFunc("/api/modelList", modelListHandler)
+    h.HandleFunc("/api/modelInfo", modelShowHandler)
 }
 
 // =======================================

@@ -38,8 +38,6 @@ type Server struct {
 func NewServer(config ServerConfig) *Server {
     logger := log.NewWithOptions(os.Stderr, log.Options{
         ReportCaller: true,
-        ReportTimestamp: true,
-        TimeFormat: time.Kitchen,
     })
 
     return &Server{
@@ -68,7 +66,7 @@ func (s *Server) rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
 func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         start := time.Now()
-        log.Info("Incoming request",
+        s.logger.Info("Incoming request",
             "method", r.Method,
             "path", r.URL.Path,
             "remote", r.RemoteAddr,
@@ -77,7 +75,7 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
         next.ServeHTTP(w, r)
 
         duration := time.Since(start)
-        log.Info("Request handled",
+        s.logger.Info("Request handled",
             "method", r.Method,
             "path", r.URL.Path,
             "duration", duration,

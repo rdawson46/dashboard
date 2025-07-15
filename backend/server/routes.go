@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	ollama "github.com/ollama/ollama/api"
@@ -46,8 +47,13 @@ func chatHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // HACK: placed here temp
-    url := "http://10.0.2.2:11434"
+	url := os.Getenv("OLLAMA_URL")
+	
+	if url == "" {
+        http.Error(w, "Ollama URL not set", http.StatusInternalServerError)
+        return
+	}
+
     ctx := r.Context()
 
     oc, err := api.NewOllamaClient(url)
@@ -104,8 +110,12 @@ func streamHandler(l *log.Logger) http.HandlerFunc {
             return
         }
 
-        // HACK: placed here temp, make env variable
-        url := "http://10.0.2.2:11434"
+		url := os.Getenv("OLLAMA_URL")
+
+		if url == "" {
+			http.Error(w, "Ollama URL not set", http.StatusInternalServerError)
+			return
+		}
         ctx := r.Context()
 
         oc, err := api.NewOllamaClient(url)
@@ -173,7 +183,13 @@ func modelListHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    url := "http://10.0.2.2:11434"
+	url := os.Getenv("OLLAMA_URL")
+	
+	if url == "" {
+        http.Error(w, "Ollama URL not set", http.StatusInternalServerError)
+        return
+	}
+
     ctx := r.Context()
 
     oc, err := api.NewOllamaClient(url)
@@ -215,7 +231,13 @@ func modelShowHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    url := "http://10.0.2.2:11434"
+	url := os.Getenv("OLLAMA_URL")
+	
+	if url == "" {
+        http.Error(w, "Ollama URL not set", http.StatusInternalServerError)
+        return
+	}
+
     ctx := r.Context()
 
     oc, err := api.NewOllamaClient(url)

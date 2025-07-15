@@ -94,6 +94,7 @@ func streamHandler(l *log.Logger) http.HandlerFunc {
         flusher, ok := w.(http.Flusher)
 
         if !ok {
+			l.Error("Failed to get flusher")
             http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
             return
         }
@@ -106,6 +107,7 @@ func streamHandler(l *log.Logger) http.HandlerFunc {
         err := json.NewDecoder(r.Body).Decode(&chatReq)
 
         if err != nil {
+			l.Error(err.Error())
             http.Error(w, err.Error(), http.StatusBadRequest)
             return
         }
@@ -113,14 +115,17 @@ func streamHandler(l *log.Logger) http.HandlerFunc {
 		url := os.Getenv("OLLAMA_URL")
 
 		if url == "" {
+			l.Error("Ollama URL not set")
 			http.Error(w, "Ollama URL not set", http.StatusInternalServerError)
 			return
 		}
+
         ctx := r.Context()
 
         oc, err := api.NewOllamaClient(url)
 
         if err != nil {
+			l.Error(err.Error())
             http.Error(w, err.Error(), http.StatusBadRequest)
             return 
         }
@@ -148,11 +153,12 @@ func streamHandler(l *log.Logger) http.HandlerFunc {
                 b, err := json.Marshal(resp)
 
                 if err != nil {
+					l.Error(err.Error())
                     http.Error(w, "failed to marshal resp", http.StatusInternalServerError)
                     return
                 }
 
-                fmt.Fprintf(w, "data: %s\n", b)
+                fmt.Fprintf(w, "data: %s\n\n", b)
                 flusher.Flush()
                 token_count++;
             case err, ok := <-errChan:
@@ -161,6 +167,7 @@ func streamHandler(l *log.Logger) http.HandlerFunc {
                 }
 
                 // HACK: replace error message
+				l.Error(err.Error())
                 http.Error(w, err.Error(), http.StatusInternalServerError)
                 return
             }

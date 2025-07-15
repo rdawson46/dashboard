@@ -7,6 +7,9 @@
     import hljs from 'highlight.js';
     import 'highlight.js/styles/rose-pine-moon.css';
     import Sidebar from './components/sidebar.vue';
+    import { toast } from 'vue3-toastify'
+    import 'vue3-toastify/dist/index.css'
+
 
     // HACK: storing this in the front end 
     let messages = [];
@@ -19,7 +22,6 @@
      * add a loader/spinner somewhere
 
     */
-
     const chatContainer = ref(null)
     const inputContainer = ref(null)
 
@@ -33,14 +35,30 @@
         })
     );
 
+    function notify(message) {
+        toast(message, {
+            autoClose: 1000,
+        })
+    }
+
     async function stream(url, body, message) {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body)
-        });
+        let response;
+        try {
+            response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(body)
+            });
+        } catch (e) {
+            notify('Error when querying agent')
+            return 
+        }
+
+        if (response.status >= 400) {
+            notify('Error when querying agent')
+        }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -60,7 +78,6 @@
                 buffer = lines.pop() || '';
 
                 for (const line of lines) {
-                    console.log(line)
                     if (line.startsWith("data: ")) {
                         const jsonStr = line.substring(6)
                         if (jsonStr.trim()) {
@@ -69,8 +86,8 @@
 
                                 if (data.done) {
                                     // TODO: add to UI
-
                                     console.log(data.eval_duration)
+
                                     messages.push({
                                         'role': 'assistant',
                                         'content': fullResponse,
@@ -92,6 +109,7 @@
             }
         } catch (error) {
             console.log(error)
+            notify('Error when querying agent')
         } finally {
             reader.releaseLock();
         }
@@ -126,13 +144,13 @@
     }
 
     onMounted(() => {
-        // console.log(chatContainer.value)
         inputContainer.value.focus()
     })
 </script>
 
 <template>
     <Sidebar />
+
     <div id="wrapper">
         <h1>Query Machine</h1>
         <div id="chat-container" ref="chatContainer"></div>

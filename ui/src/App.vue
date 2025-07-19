@@ -43,6 +43,8 @@ function notify(message) {
 }
 
 async function stream(url, body) {
+  body['webSearch'] = searchActive.value
+  body['code'] = codeActive.value
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -84,11 +86,8 @@ async function stream(url, body) {
               if (data.done) {
                 apiMessages.push({ 'role': 'assistant', 'content': fullResponse });
                 
-                // Add info icon
-                console.log(data)
-
                 // TODO: add a pop up for the data on hover
-                chatMessages.value.push({ role: 'info', content: '<i class="fa-solid fa-circle-info"></i>' });
+                chatMessages.value.push({ role: 'info', content: '<i class="fa-solid fa-circle-info"></i>', details: data });
                 return;
               }
 
@@ -135,7 +134,15 @@ onMounted(() => {
       <div id="chat-container" ref="chatContainer">
         <template v-for="(message, index) in chatMessages" :key="index">
           <div v-if="message.role !== 'info'" :class="[message.role, 'message']" v-html="message.content"></div>
-          <div v-else class="info" v-html="message.content"></div>
+
+          <div v-else class="info">
+              <div class="hover-info" v-html="message.content"></div>
+              <div class='hidden-info'>
+                  Time: {{message.details.total_duration / 1_000_000_000}}(s)
+                  <br>
+                  Tokens: {{message.details.eval_count}}
+              </div>
+          </div>
         </template>
       </div>
 
@@ -266,7 +273,7 @@ onMounted(() => {
 
 <style>
 .message {
-  padding: 12px 20px;
+  padding: 3px 20px;
   margin-bottom: 12px;
   border-radius: 18px;
   word-wrap: break-word;
@@ -290,6 +297,7 @@ onMounted(() => {
   margin-right: auto;
   align-self: flex-start;
   text-align: left;
+  margin-bottom: 0.5em;
 }
 
 .info {
@@ -299,6 +307,9 @@ onMounted(() => {
   text-align: left;
   padding: 12px 20px;
   margin-bottom: 12px;
+  width: fit-content;
+  padding-top: 0;
+  position: relative;
 }
 
 @keyframes fadeIn {
@@ -323,5 +334,22 @@ pre {
 code {
   border-radius: 10px;
   font-family: 'Fira Code', monospace;
+}
+
+.hidden-info {
+    display: none;
+}
+
+.hover-info:hover + .hidden-info {
+    display: block;
+    position: absolute;
+    z-index: 100;
+    min-width: 25%;
+    width: fit-content;
+    background-color: #232323;
+    padding: 5px;
+    border-radius: 5px;
+    top: -60px;
+    white-space: nowrap;
 }
 </style>

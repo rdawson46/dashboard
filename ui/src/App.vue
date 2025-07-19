@@ -1,272 +1,258 @@
-<script module>
-</script>
 <script setup>
-    import { ref, onMounted } from 'vue';
-    import { Marked } from 'marked';
-    import { markedHighlight } from "marked-highlight";
-    import hljs from 'highlight.js';
-    import 'highlight.js/styles/rose-pine-moon.css';
-    import Sidebar from './components/sidebar.vue';
-    import { toast } from 'vue3-toastify'
-    import 'vue3-toastify/dist/index.css'
+import { ref, onMounted } from 'vue';
+import { Marked } from 'marked';
+import { markedHighlight } from "marked-highlight";
+import hljs from 'highlight.js';
+import 'highlight.js/styles/rose-pine-moon.css';
+import Sidebar from './components/sidebar.vue';
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
+let messages = [];
 
-    // HACK: storing this in the front end 
-    let messages = [];
+const chatContainer = ref(null);
+const inputContainer = ref(null);
 
-    /*
-     TODO:
+const marked = new Marked(
+  markedHighlight({
+    langPrefix: 'hljs language-',
+    highlight(code, lang) {
+      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+      return hljs.highlight(code, { language }).value;
+    }
+  })
+);
 
-     * add a UI blocker to prevent overload
-     * add animations
-     * add a loader/spinner somewhere
+function notify(message) {
+  toast(message, {
+    autoClose: 2000,
+    theme: 'dark',
+  });
+}
 
-    */
-    const chatContainer = ref(null)
-    const inputContainer = ref(null)
+async function stream(url, body, message) {
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body)
+    });
 
-    const marked = new Marked(
-        markedHighlight({
-            langPrefix: 'hljs language-',
-            highlight(code, lang) {
-                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-                return hljs.highlight(code, { language }).value;
+    if (!response.ok) {
+      notify(`Error: ${response.status} ${response.statusText}`);
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullResponse = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const jsonStr = line.substring(6);
+          if (jsonStr.trim()) {
+            try {
+              const data = JSON.parse(jsonStr);
+              if (data.done) {
+                messages.push({ 'role': 'assistant', 'content': fullResponse });
+                return;
+              }
+              let token = data.message.content;
+              fullResponse += token;
+              message.innerHTML = marked.parse(fullResponse);
+              chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+            } catch (e) {
+              console.error('Error parsing JSON:', e);
+              notify('Error processing server response.');
             }
-        })
-    );
-
-    function notify(message) {
-        toast(message, {
-            autoClose: 1000,
-        })
-    }
-
-    async function stream(url, body, message) {
-        let response;
-        try {
-            response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(body)
-            });
-        } catch (e) {
-            notify('Error when querying agent')
-            return 
+          }
         }
-
-        if (response.status >= 400) {
-            notify('Error when querying agent')
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-
-        let buffer = '';
-        let fullResponse = '';
-
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true })
-
-                const lines = buffer.split('\n')
-                buffer = lines.pop() || '';
-
-                for (const line of lines) {
-                    if (line.startsWith("data: ")) {
-                        const jsonStr = line.substring(6)
-                        if (jsonStr.trim()) {
-                            try {
-                                const data = JSON.parse(jsonStr)
-
-                                if (data.done) {
-                                    // TODO: add to UI
-                                    console.log(data.eval_duration)
-
-                                    messages.push({
-                                        'role': 'assistant',
-                                        'content': fullResponse,
-                                    })
-
-                                    return
-                                }
-
-                                let token = data.message.content
-                                fullResponse += token;
-                                message.innerHTML = marked.parse(fullResponse);
-                                chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
-                            } catch (e) {
-                                return
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            console.log(error)
-            notify('Error when querying agent')
-        } finally {
-            reader.releaseLock();
-        }
+      }
     }
+  } catch (error) {
+    console.error('Error during fetch:', error);
+    notify('Error when querying agent.');
+  } 
+}
 
-    function addMessage(role, content) {
-        const messageElement = document.createElement('div');
-        messageElement.classList.add(role, 'message');
+function addMessage(role, content) {
+  const messageElement = document.createElement('div');
+  messageElement.classList.add(role, 'message');
+  messageElement.innerHTML = marked.parse(content);
+  chatContainer.value.appendChild(messageElement);
+  chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+  return messageElement;
+}
 
-        messageElement.innerHTML = content;
-        chatContainer.value.appendChild(messageElement);
+async function query() {
+  const chat = inputContainer.value.innerText.trim();
+  if (chat === '') return;
 
-        chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+  addMessage('user', chat);
+  messages.push({ 'role': 'user', 'content': chat });
+  inputContainer.value.innerText = '';
 
-        return messageElement
-    }
+  let messElem = addMessage('assistant', '<i class="fa-solid fa-spinner fa-spin-pulse"></i>');
+  await stream('/api/stream', { "messages": messages }, messElem);
+}
 
-    async function query() {
-        let chat = inputContainer.value.innerText.trim()
-        if (chat === '') return;
-
-        addMessage('user', chat);
-        messages.push({
-            'role': 'user',
-            'content': chat,
-        })
-        
-        inputContainer.value.innerText = '';
-
-        let messElem = addMessage('assistant', '')
-        await stream('/api/stream', {"messages": messages}, messElem);
-    }
-
-    onMounted(() => {
-        inputContainer.value.focus()
-    })
+onMounted(() => {
+  inputContainer.value.focus();
+});
 </script>
 
 <template>
+  <div id="app-container">
     <Sidebar />
-
-    <div id="wrapper">
-        <h1>Query Machine</h1>
-        <div id="chat-container" ref="chatContainer"></div>
-        <div class="input-area">
-            <div ref="inputContainer" id="message-input" contenteditable="true" @keydown.enter.exact.prevent="query"></div>
-            <button id="send-btn" @click='query'>Send</button>
-        </div>
-    </div>
+    <main id="main-content">
+      <div id="chat-container" ref="chatContainer"></div>
+      <div class="input-area">
+        <div ref="inputContainer" id="message-input" contenteditable="true" @keydown.enter.exact.prevent="query"></div>
+        <button id="send-btn" @click='query'><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </main>
+  </div>
 </template>
 
 <style scoped>
-/* TODO: add transitions */
-#wrapper {
-    height: 100vh;
-    width: 100%;
-    margin: 0 auto;
-    padding: 20px;
-    overflow-y: hidden;
+#app-container {
+  display: flex;
+  height: 100vh;
+  background-color: #1e1e1e;
+  width: 100vw;
+}
+
+#main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100% - 40px;
+  padding: 20px;
+  margin-left: 6rem; /* Adjust for sidebar width */
+  transition: margin-left 200ms ease;
+  align-items: center;
 }
 
 #chat-container {
-    height: 75%;
-    width: 80%;
-    border-radius: 5px;
-    padding: 10px;
-    overflow-y: auto;
-    margin-bottom: 10px;
-    scroll-behavior: smooth;
-    margin-left: auto;
-    margin-right: auto;
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  background-color: #2d2d2d;
+  width: 90%;
 }
 
 .input-area {
-    display: flex;
-    align-items: center;
-    border: 1px solid #ccc;
-    border-radius: 20px;
-    padding: 5px;
-    max-width: 60%;
-    place-items: left;
-    margin-left: auto;
-    margin-right: auto;
+  display: flex;
+  align-items: center;
+  background-color: #2d2d2d;
+  border-radius: 25px;
+  padding: 5px 15px;
+  width: 50%;
 }
 
 #message-input {
-    flex-grow: 1;
-    padding: 10px;
-    border: none;
-    resize: none;
-    font-family: inherit;
-    font-size: 1rem;
-    line-height: 1.5;
-    min-height: 50px;
-    max-height: 200px;
-    overflow-y: auto;
-    text-align: left;
+  flex-grow: 1;
+  padding: 10px;
+  border: none;
+  resize: none;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  min-height: 40px;
+  max-height: 200px;
+  overflow-y: auto;
+  color: #f0f0f0;
+  background-color: transparent;
+  text-align: left;
 }
 
 #message-input:focus {
-    outline: none;
+  outline: none;
 }
 
-button {
-    padding: 10px 15px;
-    margin: 0 10px;
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    background-color: #2b5b6f;
-    color: white;
-    transition: background-color 0.2s ease;
+#send-btn {
+  background: none;
+  border: none;
+  color: #4a90e2;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 10px;
+  transition: color 0.2s ease;
 }
 
-button:hover {
-    background-color: #1e4258;
+#send-btn:hover {
+  color: #81b2f3;
 }
 
+@media only screen and (min-width: 600px) {
+  .navbar:hover ~ #main-content {
+    margin-left: 16rem;
+  }
+}
 </style>
 
 <style>
-
 .message {
-    padding: 8px 25px;
-    margin-bottom: 10px;
-    border-radius: 20px;
-    width: fit-content;
-    word-wrap: break-word;
-    text-align: left;
-    animation: fadeIn 0.3s ease-out;
+  padding: 12px 20px;
+  margin-bottom: 12px;
+  border-radius: 18px;
+  word-wrap: break-word;
+  max-width: 85%;
+  line-height: 1.6;
+  animation: fadeIn 0.5s ease-in-out;
+  width: fit-content;
 }
 
 .user {
-    color: #303030;
-    max-width: 85%;
-    background-color: #cf6f6a;
-    margin-left: auto;
-    margin-right: 0;
+  background-color: #cf6f6a;
+  color: white;
+  margin-left: auto;
+  align-self: flex-end;
+  text-align: right;
 }
 
 .assistant {
-    /*background-color: #2b5b6f;*/
-    margin-left: auto;
-    margin-right: auto;
+  background-color: #3a3a3a;
+  color: #f0f0f0;
+  margin-right: auto;
+  align-self: flex-start;
+  text-align: left;
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+pre {
+  background-color: #1a1a1a;
+  padding: 10px;
+  border-radius: 15px;
+  overflow-x: auto;
+  font-family: 'Fira Code', monospace;
 }
 
 code {
-    border-radius: 15px;
+  border-radius: 10px;
+  font-family: 'Fira Code', monospace;
 }
-
 </style>

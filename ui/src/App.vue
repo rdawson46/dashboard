@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch, nextTick } from 'vue';
 import { Marked } from 'marked';
 import { markedHighlight } from "marked-highlight";
 import hljs from 'highlight.js';
@@ -8,10 +8,12 @@ import Sidebar from './components/sidebar.vue';
 import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
 
-let messages = [];
 
 const chatContainer = ref(null);
 const inputContainer = ref(null);
+
+const apiMessages = [];
+const chatMessages = ref([]); // For rendering: { role, content }
 
 const marked = new Marked(
   markedHighlight({
@@ -23,14 +25,22 @@ const marked = new Marked(
   })
 );
 
+watch(chatMessages, async () => {
+  await nextTick();
+  if (chatContainer.value) {
+    chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+  }
+}, { deep: true });
+
+
 function notify(message) {
   toast(message, {
-    autoClose: 2000,
+    autoClose: 1000,
     theme: 'dark',
   });
 }
 
-async function stream(url, body, message) {
+async function stream(url, body) {
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -42,6 +52,7 @@ async function stream(url, body, message) {
 
     if (!response.ok) {
       notify(`Error: ${response.status} ${response.statusText}`);
+      chatMessages.value.pop();
       return;
     }
 
@@ -49,6 +60,10 @@ async function stream(url, body, message) {
     const decoder = new TextDecoder();
     let buffer = '';
     let fullResponse = '';
+    
+    const assistantMessage = chatMessages.value[chatMessages.value.length - 1];
+    assistantMessage.content = '';
+    assistantMessage.html = '';
 
     while (true) {
       const { done, value } = await reader.read();
@@ -65,13 +80,17 @@ async function stream(url, body, message) {
             try {
               const data = JSON.parse(jsonStr);
               if (data.done) {
-                messages.push({ 'role': 'assistant', 'content': fullResponse });
+                apiMessages.push({ 'role': 'assistant', 'content': fullResponse });
+                
+                // Add info icon
+                console.log(data)
+                chatMessages.value.push({ role: 'info', content: '<i class="fa-solid fa-circle-info"></i>' });
                 return;
               }
+
               let token = data.message.content;
               fullResponse += token;
-              message.innerHTML = marked.parse(fullResponse);
-              chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+              assistantMessage.content = marked.parse(fullResponse);
             } catch (e) {
               console.error('Error parsing JSON:', e);
               notify('Error processing server response.');
@@ -83,28 +102,21 @@ async function stream(url, body, message) {
   } catch (error) {
     console.error('Error during fetch:', error);
     notify('Error when querying agent.');
+    chatMessages.value.pop();
   } 
-}
-
-function addMessage(role, content) {
-  const messageElement = document.createElement('div');
-  messageElement.classList.add(role, 'message');
-  messageElement.innerHTML = marked.parse(content);
-  chatContainer.value.appendChild(messageElement);
-  chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
-  return messageElement;
 }
 
 async function query() {
   const chat = inputContainer.value.innerText.trim();
   if (chat === '') return;
 
-  addMessage('user', chat);
-  messages.push({ 'role': 'user', 'content': chat });
+  apiMessages.push({ 'role': 'user', 'content': chat });
+  chatMessages.value.push({ role: 'user', content: marked.parse(chat) });
+  
   inputContainer.value.innerText = '';
 
-  let messElem = addMessage('assistant', '<i class="fa-solid fa-spinner fa-spin-pulse"></i>');
-  await stream('/api/stream', { "messages": messages }, messElem);
+  chatMessages.value.push({ role: 'assistant', content: '<i class="fa-solid fa-spinner fa-spin-pulse"></i>' });
+  await stream('/api/stream', { "messages": apiMessages });
 }
 
 onMounted(() => {
@@ -116,7 +128,13 @@ onMounted(() => {
   <div id="app-container">
     <Sidebar />
     <main id="main-content">
-      <div id="chat-container" ref="chatContainer"></div>
+      <div id="chat-container" ref="chatContainer">
+        <template v-for="(message, index) in chatMessages" :key="index">
+          <div v-if="message.role !== 'info'" :class="[message.role, 'message']" v-html="message.content"></div>
+          <div v-else class="info" v-html="message.content"></div>
+        </template>
+      </div>
+
       <div class="input-area">
         <div ref="inputContainer" id="message-input" contenteditable="true" @keydown.enter.exact.prevent="query"></div>
         <button id="send-btn" @click='query'><i class="fa-solid fa-paper-plane"></i></button>
@@ -230,6 +248,15 @@ onMounted(() => {
   margin-right: auto;
   align-self: flex-start;
   text-align: left;
+}
+
+.info {
+  color: #f0f0f0;
+  margin-right: auto;
+  align-self: flex-start;
+  text-align: left;
+  padding: 12px 20px;
+  margin-bottom: 12px;
 }
 
 @keyframes fadeIn {

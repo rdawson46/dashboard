@@ -86,6 +86,8 @@ async function stream(url, body) {
                 
                 // Add info icon
                 console.log(data)
+
+                // TODO: add a pop up for the data on hover
                 chatMessages.value.push({ role: 'info', content: '<i class="fa-solid fa-circle-info"></i>' });
                 return;
               }
@@ -144,8 +146,14 @@ onMounted(() => {
         </div>
 
         <div class="input-area-buttons">
-            <button @click='searchActive = !searchActive' :class="{ active: searchActive }">Web Search</button>
-            <button @click='codeActive = !codeActive' :class="{ active: codeActive }">Code</button>
+            <button @click='searchActive = !searchActive' :class="{ active: searchActive }">
+                <i class="fa-solid fa-globe"></i>
+                Web Search
+            </button>
+            <button @click='codeActive = !codeActive' :class="{ active: codeActive }">
+                <i class="fa-solid fa-code"></i>
+                Code
+            </button>
         </div>
 
       </div>
@@ -199,7 +207,7 @@ onMounted(() => {
 }
 
 .active {
-    background-color: #24b4fb;
+    background-color: #4a90e2;
 }
 
 .input-area-buttons > button {

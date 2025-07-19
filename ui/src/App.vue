@@ -8,6 +8,8 @@ import Sidebar from './components/sidebar.vue';
 import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
 
+const searchActive = ref(false);
+const codeActive = ref(false);
 
 const chatContainer = ref(null);
 const inputContainer = ref(null);
@@ -135,9 +137,17 @@ onMounted(() => {
         </template>
       </div>
 
-      <div class="input-area">
-        <div ref="inputContainer" id="message-input" contenteditable="true" @keydown.enter.exact.prevent="query"></div>
-        <button id="send-btn" @click='query'><i class="fa-solid fa-paper-plane"></i></button>
+      <div class="input-area-main">
+        <div class="input-area-sub">
+            <div ref="inputContainer" id="message-input" contenteditable="true" @keydown.enter.exact.prevent="query"></div>
+            <button id="send-btn" @click='query'><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+
+        <div class="input-area-buttons">
+            <button @click='searchActive = !searchActive' :class="{ active: searchActive }">Web Search</button>
+            <button @click='codeActive = !codeActive' :class="{ active: codeActive }">Code</button>
+        </div>
+
       </div>
     </main>
   </div>
@@ -168,17 +178,41 @@ onMounted(() => {
   padding: 10px;
   border-radius: 8px;
   margin-bottom: 20px;
-  background-color: #2d2d2d;
   width: 90%;
 }
 
-.input-area {
-  display: flex;
-  align-items: center;
+.input-area-main {
+  align-items: left;
   background-color: #2d2d2d;
   border-radius: 25px;
   padding: 5px 15px;
   width: 50%;
+}
+
+.input-area-sub {
+  display: flex;
+  align-items: center;
+}
+
+.input-area-buttons {
+    width: fit-content;
+}
+
+.active {
+    background-color: #24b4fb;
+}
+
+.input-area-buttons > button {
+    border: 1px solid #24b4fb;
+    border-radius: 0.9em;
+    cursor: pointer;
+    padding: 0.8em 1.2em 0.8em 1em;
+    font-size: 600;
+    margin: 0 5px;
+}
+
+.input-area-buttons > button:hover {
+    background-color: #0071e2;
 }
 
 #message-input {

@@ -22,6 +22,9 @@ const userMessageHistory = computed(() => apiMessages.filter(msg => msg.role ===
 const historyIndex = ref(-1);
 let pristineInput = '';
 
+const modelList = ref([])
+const modelSelector = ref(null)
+
 const handleInput = (e) => {
     inputValue.value = e.target.innerText;
     if (historyIndex.value !== -1) {
@@ -109,8 +112,10 @@ async function copyToClip(text) {
 }
 
 async function stream(url, body) {
+  body['model'] = modelSelector.value.value
   body['webSearch'] = searchActive.value
   body['code'] = codeActive.value
+
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -189,8 +194,28 @@ async function query() {
   await stream('/api/stream', { "messages": apiMessages });
 }
 
-onMounted(() => {
+async function getModelList() {
+    try {
+        const response = await fetch('/api/modelList')
+
+        if (!response.ok) {
+          notify(`Error: ${response.status} ${response.statusText}`);
+          return;
+        }
+
+        const data = await response.json();
+
+        console.log(data)
+
+        modelList.value = data
+    } catch (error) {
+        console.error(error)
+    }
+}
+
+onMounted(async () => {
   inputContainer.value.focus();
+  await getModelList()
 });
 </script>
 
@@ -198,6 +223,13 @@ onMounted(() => {
   <div id="app-container">
     <Sidebar />
     <main id="main-content">
+
+      <select name="model" id="modelSelector" ref="modelSelector">
+          <template v-for="model in modelList">
+              <option :value="model.model">{{model.name}}</option>
+          </template>
+      </select>
+
       <div id="chat-container" ref="chatContainer">
         <template v-for="(message, index) in chatMessages" :key="index">
           <div v-if="message.role !== 'info'" :class="[message.role, 'message']" v-html="message.content"></div>

@@ -49,7 +49,7 @@ func (oc OllamaClient) newRequest(query string, stream *bool) *api.ChatRequest {
     }
 }
 
-func (oc OllamaClient) newRequestWithMessages(messages []api.Message, stream bool) *api.ChatRequest {
+func (oc OllamaClient) newRequestWithMessages(messages []api.Message, model string, stream bool) *api.ChatRequest {
     totalMessages := append([]api.Message{
         {
             Role: "system",
@@ -60,7 +60,7 @@ func (oc OllamaClient) newRequestWithMessages(messages []api.Message, stream boo
 
     return &api.ChatRequest{
         // Model: "qwen3:1.7b",
-        Model: "gemma3:1b",
+        Model: model,
         Messages: totalMessages,
         Options: map[string]any{
             "temperature": 0.7,
@@ -120,11 +120,11 @@ func (oc OllamaClient) Chat(ctx context.Context, query string) (string, error) {
     return fullResponse, nil
 }
 
-func (oc OllamaClient) Stream(ctx context.Context, messages []api.Message, msgChan chan api.ChatResponse, errChan chan error) {
+func (oc OllamaClient) Stream(ctx context.Context, messages []api.Message, model string, msgChan chan api.ChatResponse, errChan chan error) {
     defer close(msgChan)
     defer close(errChan)
 
-    req := oc.newRequestWithMessages(messages, true)
+    req := oc.newRequestWithMessages(messages, model, true)
 
     err := oc.client.Chat(ctx, req, func(resp api.ChatResponse) error {
         msgChan <- resp

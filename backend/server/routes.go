@@ -103,6 +103,7 @@ func streamHandler(l *log.Logger) http.HandlerFunc {
             Query []ollama.Message `json:"messages"`
 			Websearch bool `json:"webSearch"`
 			Code bool `json:"code"`
+			Model string `json:"model"`
         }
 
         var chatReq request
@@ -137,10 +138,11 @@ func streamHandler(l *log.Logger) http.HandlerFunc {
 
         l.Info(
             "Starting stream",
+			"model", chatReq.Model,
             "remote", r.RemoteAddr,
         )
 
-        go oc.Stream(ctx, chatReq.Query, msgChan, errChan)
+        go oc.Stream(ctx, chatReq.Query, chatReq.Model, msgChan, errChan)
 
         token_count := 0
         OuterLoop:

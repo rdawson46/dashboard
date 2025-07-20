@@ -101,6 +101,8 @@ func streamHandler(l *log.Logger) http.HandlerFunc {
 
         type request struct {
             Query []ollama.Message `json:"messages"`
+			Websearch bool `json:"webSearch"`
+			Code bool `json:"code"`
         }
 
         var chatReq request

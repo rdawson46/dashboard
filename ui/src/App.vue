@@ -17,6 +17,50 @@ const inputContainer = ref(null);
 const apiMessages = [];
 const chatMessages = ref([]); // For rendering: { role, content }
 
+let history_index = null;
+
+// TODO: need to update to null on input
+function scroll_history_up() {
+    if (history_index === null) {
+        let x = find_last_query()
+
+        if (x < 0) return
+
+        history_index = x
+    } else {
+        if (history_index == 0) return
+
+        history_index -= 2;
+    }
+
+    inputContainer.value.innerText = apiMessages[history_index].content
+}
+
+function scroll_history_down() {
+    if (history_index === null) return
+
+    history_index += 2;
+
+    if (history_index >= apiMessages.length) {
+        history_index = null
+        inputContainer.value.innerText = ""
+        return
+    }
+
+    inputContainer.value.innerText = apiMessages[history_index].content
+}
+
+function find_last_query() {
+    if (!apiMessages.length) {
+        return -1
+    }
+
+    for (let i = apiMessages.length - 1; i >= 0; i--) {
+        if (apiMessages[i].role != 'user') continue
+        return i
+    }
+}
+
 const marked = new Marked(
   markedHighlight({
     langPrefix: 'hljs language-',
@@ -40,6 +84,14 @@ function notify(message) {
     autoClose: 1000,
     theme: 'dark',
   });
+}
+
+async function copyToClip(text) {
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 async function stream(url, body) {
@@ -86,8 +138,8 @@ async function stream(url, body) {
               if (data.done) {
                 apiMessages.push({ 'role': 'assistant', 'content': fullResponse });
                 
-                // TODO: add a pop up for the data on hover
-                chatMessages.value.push({ role: 'info', content: '<i class="fa-solid fa-circle-info"></i>', details: data });
+                // store last message here
+                chatMessages.value.push({ role: 'info', content: apiMessages[apiMessages.length - 1].content, details: data });
                 return;
               }
 
@@ -136,19 +188,20 @@ onMounted(() => {
           <div v-if="message.role !== 'info'" :class="[message.role, 'message']" v-html="message.content"></div>
 
           <div v-else class="info">
-              <div class="hover-info" v-html="message.content"></div>
+              <i class="fa-solid fa-circle-info hover-info"></i>
               <div class='hidden-info'>
                   Time: {{message.details.total_duration / 1_000_000_000}}(s)
                   <br>
                   Tokens: {{message.details.eval_count}}
               </div>
+              <i class="fa-solid fa-clipboard" @click="copyToClip(message.content)"></i>
           </div>
         </template>
       </div>
 
       <div class="input-area-main">
         <div class="input-area-sub">
-            <div ref="inputContainer" id="message-input" contenteditable="true" @keydown.enter.exact.prevent="query"></div>
+            <div ref="inputContainer" id="message-input" contenteditable="true" @keydown.down.exact.prevent="scroll_history_down()" @keydown.up.exact.prevent="scroll_history_up()" @keydown.enter.exact.prevent="query"></div>
             <button id="send-btn" @click='query'><i class="fa-solid fa-paper-plane"></i></button>
         </div>
 
@@ -188,6 +241,7 @@ onMounted(() => {
 }
 
 #chat-container {
+  max-width: 1000px;
   flex-grow: 1;
   overflow-y: auto;
   padding: 10px;
@@ -288,11 +342,11 @@ onMounted(() => {
   color: white;
   margin-left: auto;
   align-self: flex-end;
-  text-align: right;
+  text-align: left;
 }
 
 .assistant {
-  background-color: #3a3a3a;
+  font-size: 1.15em;
   color: #f0f0f0;
   margin-right: auto;
   align-self: flex-start;
@@ -301,6 +355,7 @@ onMounted(() => {
 }
 
 .info {
+  display: flex;
   color: #f0f0f0;
   margin-right: auto;
   align-self: flex-start;
@@ -310,6 +365,12 @@ onMounted(() => {
   width: fit-content;
   padding-top: 0;
   position: relative;
+}
+
+.info > i {
+  font-size: 20px;
+  margin: 0 10px;
+  cursor: pointer;
 }
 
 @keyframes fadeIn {
@@ -340,6 +401,10 @@ code {
     display: none;
 }
 
+.hover-info {
+    font-size: 20px;
+}
+
 .hover-info:hover + .hidden-info {
     display: block;
     position: absolute;
@@ -351,5 +416,6 @@ code {
     border-radius: 5px;
     top: -60px;
     white-space: nowrap;
+    background-color: #3a3a3a;
 }
 </style>

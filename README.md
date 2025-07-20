@@ -17,7 +17,8 @@ The application allows users to interact with the LLM through a chat-like interf
 * Highlight.js (Syntax Highlighting)
 
 ## To Do
-* chose LLM interface
+* LLM selection menu
+* tools (web search and code execution)
 * notification (toaster)
 * LLM info page
 * db

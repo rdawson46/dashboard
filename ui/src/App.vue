@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch, nextTick } from 'vue';
+import { ref, onMounted, watch, nextTick, computed, reactive } from 'vue';
 import { Marked } from 'marked';
 import { markedHighlight } from "marked-highlight";
 import hljs from 'highlight.js';
@@ -14,52 +14,66 @@ const codeActive = ref(false);
 const chatContainer = ref(null);
 const inputContainer = ref(null);
 
-const apiMessages = [];
-const chatMessages = ref([]); // For rendering: { role, content }
+const apiMessages = reactive([]);
+const chatMessages = ref([]);
 
-let history_index = null;
+const inputValue = ref('');
+const userMessageHistory = computed(() => apiMessages.filter(msg => msg.role === 'user'));
+const historyIndex = ref(-1);
+let pristineInput = '';
 
-// TODO: need to update to null on input
-function scroll_history_up() {
-    if (history_index === null) {
-        let x = find_last_query()
+const handleInput = (e) => {
+    inputValue.value = e.target.innerText;
+    if (historyIndex.value !== -1) {
+        historyIndex.value = -1;
+        pristineInput = '';
+    }
+};
 
-        if (x < 0) return
+function navigateHistoryUp() {
+    if (!userMessageHistory.value.length) return;
 
-        history_index = x
+    if (historyIndex.value === -1) {
+        pristineInput = inputValue.value;
+        historyIndex.value = userMessageHistory.value.length - 1;
+    } else if (historyIndex.value > 0) {
+        historyIndex.value--;
     } else {
-        if (history_index == 0) return
-
-        history_index -= 2;
+        return;
     }
-
-    inputContainer.value.innerText = apiMessages[history_index].content
+    inputValue.value = userMessageHistory.value[historyIndex.value].content;
 }
 
-function scroll_history_down() {
-    if (history_index === null) return
+function navigateHistoryDown() {
+    if (historyIndex.value === -1) return;
 
-    history_index += 2;
-
-    if (history_index >= apiMessages.length) {
-        history_index = null
-        inputContainer.value.innerText = ""
-        return
-    }
-
-    inputContainer.value.innerText = apiMessages[history_index].content
-}
-
-function find_last_query() {
-    if (!apiMessages.length) {
-        return -1
-    }
-
-    for (let i = apiMessages.length - 1; i >= 0; i--) {
-        if (apiMessages[i].role != 'user') continue
-        return i
+    if (historyIndex.value < userMessageHistory.value.length - 1) {
+        historyIndex.value++;
+        inputValue.value = userMessageHistory.value[historyIndex.value].content;
+    } else {
+        historyIndex.value = -1;
+        inputValue.value = pristineInput;
     }
 }
+
+watch(inputValue, (newValue) => {
+    if (inputContainer.value && newValue !== inputContainer.value.innerText) {
+        inputContainer.value.innerText = newValue;
+        // Move cursor to the end
+        nextTick(() => {
+            if (document.activeElement === inputContainer.value) {
+                const selection = window.getSelection();
+                if (selection) {
+                    const range = document.createRange();
+                    range.selectNodeContents(inputContainer.value);
+                    range.collapse(false);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+            }
+        });
+    }
+});
 
 const marked = new Marked(
   markedHighlight({
@@ -162,13 +176,14 @@ async function stream(url, body) {
 }
 
 async function query() {
-  const chat = inputContainer.value.innerText.trim();
+  const chat = inputValue.value.trim();
   if (chat === '') return;
 
   apiMessages.push({ 'role': 'user', 'content': chat });
   chatMessages.value.push({ role: 'user', content: marked.parse(chat) });
   
-  inputContainer.value.innerText = '';
+  inputValue.value = '';
+  historyIndex.value = -1;
 
   chatMessages.value.push({ role: 'assistant', content: '<i class="fa-solid fa-spinner fa-spin-pulse"></i>' });
   await stream('/api/stream', { "messages": apiMessages });
@@ -201,7 +216,11 @@ onMounted(() => {
 
       <div class="input-area-main">
         <div class="input-area-sub">
-            <div ref="inputContainer" id="message-input" contenteditable="true" @keydown.down.exact.prevent="scroll_history_down()" @keydown.up.exact.prevent="scroll_history_up()" @keydown.enter.exact.prevent="query"></div>
+            <div ref="inputContainer" id="message-input" contenteditable="true" 
+                 @input="handleInput" 
+                 @keydown.down.exact.prevent="navigateHistoryDown()" 
+                 @keydown.up.exact.prevent="navigateHistoryUp()" 
+                 @keydown.enter.exact.prevent="query"></div>
             <button id="send-btn" @click='query'><i class="fa-solid fa-paper-plane"></i></button>
         </div>
 

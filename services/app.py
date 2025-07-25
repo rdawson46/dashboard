@@ -7,6 +7,7 @@ app = Flask(__name__)
 @app.route("/run", methods=["POST"])
 def run_code():
     if request.json is None:
+        print('no json')
         return jsonify({'error': "no json provided"})
 
     code = request.json.get('code', "")
@@ -17,8 +18,10 @@ def run_code():
         with contextlib.redirect_stdout(output):
             # exec(code, safe_globals)
             exec(code)
-        return jsonify({'output': output.getvalue()})
+        print("Value from code", output.getvalue())
+        return jsonify({'result': output.getvalue()})
     except Exception as e:
+        print(e)
         return jsonify({'error': str(e)})
 
 
@@ -32,4 +35,4 @@ def web_search():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5500)
+    app.run(host='0.0.0.0', port=5500, debug=True)

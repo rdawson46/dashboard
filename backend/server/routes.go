@@ -99,14 +99,7 @@ func streamHandler(l *log.Logger) http.HandlerFunc {
             return
         }
 
-        type request struct {
-            Query []ollama.Message `json:"messages"`
-			Websearch bool `json:"webSearch"`
-			Code bool `json:"code"`
-			Model string `json:"model"`
-        }
-
-        var chatReq request
+        var chatReq api.StreamRequest
         err := json.NewDecoder(r.Body).Decode(&chatReq)
 
         if err != nil {
@@ -142,7 +135,7 @@ func streamHandler(l *log.Logger) http.HandlerFunc {
             "remote", r.RemoteAddr,
         )
 
-        go oc.Stream(ctx, chatReq.Query, chatReq.Model, msgChan, errChan)
+        go oc.Stream(ctx, chatReq, chatReq.Model, msgChan, errChan)
 
         token_count := 0
         OuterLoop:

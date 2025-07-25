@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -11,6 +12,53 @@ import (
 
 type OllamaClient struct {
     client *api.Client
+}
+
+type StreamRequest struct {
+	Query []api.Message `json:"messages"`
+	Websearch bool `json:"webSearch"`
+	Code bool `json:"code"`
+	Model string `json:"model"`
+}
+
+func getWebSearchTool() api.Tool {
+	return api.Tool{
+		Type: "string",
+		Function: api.ToolFunction {
+			Name: "web search",
+			Description: "tool for searching the web with the user's query",
+			Parameters: struct{Type string "json:\"type\""; Defs any "json:\"$defs,omitempty\""; Items any "json:\"items,omitempty\""; Required []string "json:\"required\""; Properties map[string]struct{Type api.PropertyType "json:\"type\""; Items any "json:\"items,omitempty\""; Description string "json:\"description\""; Enum []any "json:\"enum,omitempty\""} "json:\"properties\""}{
+				Type: "object",
+				Properties: map[string]struct{Type api.PropertyType "json:\"type\""; Items any "json:\"items,omitempty\""; Description string "json:\"description\""; Enum []any "json:\"enum,omitempty\""}{
+					"query": struct{Type api.PropertyType "json:\"type\""; Items any "json:\"items,omitempty\""; Description string "json:\"description\""; Enum []any "json:\"enum,omitempty\""}{
+						Type: []string{"string"},
+						Description: "query to help answer the user's question",
+					},
+				},
+				Required: []string{"query"},
+			},
+		},
+	}
+}
+
+func getCodeExecution() api.Tool {
+	return api.Tool{
+		Type: "string",
+		Function: api.ToolFunction {
+			Name: "python code execution",
+			Description: "execute python code dynamically",
+			Parameters: struct{Type string "json:\"type\""; Defs any "json:\"$defs,omitempty\""; Items any "json:\"items,omitempty\""; Required []string "json:\"required\""; Properties map[string]struct{Type api.PropertyType "json:\"type\""; Items any "json:\"items,omitempty\""; Description string "json:\"description\""; Enum []any "json:\"enum,omitempty\""} "json:\"properties\""}{
+				Type: "object",
+				Properties: map[string]struct{Type api.PropertyType "json:\"type\""; Items any "json:\"items,omitempty\""; Description string "json:\"description\""; Enum []any "json:\"enum,omitempty\""}{
+					"code": struct{Type api.PropertyType "json:\"type\""; Items any "json:\"items,omitempty\""; Description string "json:\"description\""; Enum []any "json:\"enum,omitempty\""}{
+						Type: []string{"string"},
+						Description: "code that you produced",
+					},
+				},
+				Required: []string{"code"},
+			},
+		},
+	}
 }
 
 func NewOllamaClient(_url string) (*OllamaClient, error) {
@@ -120,16 +168,90 @@ func (oc OllamaClient) Chat(ctx context.Context, query string) (string, error) {
     return fullResponse, nil
 }
 
-func (oc OllamaClient) Stream(ctx context.Context, messages []api.Message, model string, msgChan chan api.ChatResponse, errChan chan error) {
+func (oc OllamaClient) Stream(ctx context.Context, userReq StreamRequest, model string, msgChan chan api.ChatResponse, errChan chan error) {
     defer close(msgChan)
     defer close(errChan)
 
-    req := oc.newRequestWithMessages(messages, model, true)
+    req := oc.newRequestWithMessages(userReq.Query, model, true)
 
-    err := oc.client.Chat(ctx, req, func(resp api.ChatResponse) error {
+	tools := api.Tools{}
+
+	if userReq.Code {
+		tools = append(tools, getCodeExecution())
+	}
+
+	if userReq.Websearch {
+		tools = append(tools, getWebSearchTool())
+	}
+
+	req.Tools = tools
+
+	var handler api.ChatResponseFunc
+
+	handler = func(resp api.ChatResponse) error {
         msgChan <- resp
+
+		if len(resp.Message.ToolCalls) > 0 {
+			for _, toolCall := range resp.Message.ToolCalls {
+				switch toolCall.Function.Name {
+				case "web search":
+					// will be query
+					_, ok := toolCall.Function.Arguments["query"]
+
+					if !ok {
+						// TODO: continue
+						break
+					}
+
+				case "python code execution":
+					fmt.Println("\n\nCalling Code\n\n")
+					code, ok := toolCall.Function.Arguments["code"]
+
+					if !ok {
+						// TODO: handle
+						break
+					}
+
+					c, ok := code.(string)
+
+					if !ok {
+						// TODO: handle
+						break
+					}
+
+					result, err := ExecutePython(c)
+
+					if err != nil {
+						// TODO: handle
+						fmt.Printf("\nError: %s\n", err.Error())
+						fmt.Printf("\nCode: %s\n", c)
+
+						break
+					}
+
+					content := fmt.Sprintf("Result: %s\nError: %s", result.Result, result.Error)
+
+					req.Messages = append(
+						req.Messages,
+						resp.Message,
+						api.Message{
+							Role: "tool",
+							Content: content,
+						},
+					)
+
+					return oc.client.Chat(ctx, req, handler)
+				default:
+					fmt.Println("can not find tool")
+				}
+			}
+		}
+
         return nil
-    })
+	}
+
+
+	err := oc.client.Chat(ctx, req, handler)
 
     if err != nil {
         errChan <- err

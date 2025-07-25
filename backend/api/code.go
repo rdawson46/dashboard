@@ -4,17 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 )
 
 type CodeResult struct {
-	Result string `json:"result"`
-	Error string `json:"error"`
+	Result string `json:"result,omitempty"`
+	Error string `json:"error,omitempty"`
 }
 
-func executePython(code string) (*CodeResult, error) {
+func ExecutePython(code string) (*CodeResult, error) {
 	reqData := map[string]string{"code": code}
 
 	jsonReq, err := json.Marshal(reqData)
@@ -31,7 +32,7 @@ func executePython(code string) (*CodeResult, error) {
 		return nil, errors.New("No Code URL in ENV")
 	}
 
-	req, err := http.NewRequest(http.MethodPost, url, bodyReader)
+	req, err := http.NewRequest(http.MethodPost, url + "/run", bodyReader)
 
 	if err != nil {
 		return nil, err
@@ -52,12 +53,15 @@ func executePython(code string) (*CodeResult, error) {
 		return nil, err
 	}
 
-	var result *CodeResult
-	err = json.Unmarshal(body, result)
+	var result CodeResult
+	err = json.Unmarshal(body, &result)
 
 	if err != nil {
+		fmt.Println("Error when marshaling")
+		fmt.Println(err.Error())
+		fmt.Println(string(body))
 		return nil, err
 	}
 
-	return result, nil
+	return &result, nil
 }

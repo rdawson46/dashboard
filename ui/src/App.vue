@@ -230,7 +230,7 @@ onMounted(async () => {
           </template>
       </select>
 
-      <div id="chat-container" ref="chatContainer">
+      <div id="chat-container" ref="chatContainer" :class="{ 'hidden': !chatMessages.length }">
         <template v-for="(message, index) in chatMessages" :key="index">
           <div v-if="message.role !== 'info'" :class="[message.role, 'message']" v-html="message.content"></div>
 
@@ -246,28 +246,29 @@ onMounted(async () => {
         </template>
       </div>
 
-      <div class="input-area-main">
-        <div class="input-area-sub">
-            <div ref="inputContainer" id="message-input" contenteditable="true" 
-                 @input="handleInput" 
-                 @keydown.down.exact.prevent="navigateHistoryDown()" 
-                 @keydown.up.exact.prevent="navigateHistoryUp()" 
-                 @keydown.enter.exact.prevent="query"></div>
-            <button id="send-btn" @click='query'><i class="fa-solid fa-paper-plane"></i></button>
-        </div>
+      <div class="input-area-main" :class="{ 'middle': !chatMessages.length }">
+          <div class="input-area-sub">
+              <div ref="inputContainer" id="message-input" contenteditable="true" 
+                  @input="handleInput" 
+                  @keydown.down.exact.prevent="navigateHistoryDown()" 
+                  @keydown.up.exact.prevent="navigateHistoryUp()" 
+                  @keydown.enter.exact.prevent="query"></div>
+              <button id="send-btn" @click='query'><i class="fa-solid fa-paper-plane"></i></button>
+          </div>
 
-        <div class="input-area-buttons">
-            <button @click='searchActive = !searchActive' :class="{ active: searchActive }">
-                <i class="fa-solid fa-globe"></i>
-                Web Search
-            </button>
-            <button @click='codeActive = !codeActive' :class="{ active: codeActive }">
-                <i class="fa-solid fa-code"></i>
-                Code
-            </button>
-        </div>
+          <div class="input-area-buttons">
+              <button @click='searchActive = !searchActive' :class="{ active: searchActive }">
+                  <i class="fa-solid fa-globe"></i>
+                  Web Search
+              </button>
+              <button @click='codeActive = !codeActive' :class="{ active: codeActive }">
+                  <i class="fa-solid fa-code"></i>
+                  Code
+              </button>
+          </div>
 
       </div>
+
     </main>
   </div>
 </template>
@@ -299,6 +300,12 @@ onMounted(async () => {
   border-radius: 8px;
   margin-bottom: 20px;
   width: 90%;
+  transition: 500ms ease-out;
+}
+
+.hidden {
+    display: none;
+    height: 0;
 }
 
 .input-area-main {
@@ -306,7 +313,12 @@ onMounted(async () => {
   background-color: #2d2d2d;
   border-radius: 25px;
   padding: 5px 15px;
-  width: 50%;
+  width: 60%;
+  transition: 500ms ease-out;
+}
+
+.middle {
+    margin: auto;
 }
 
 .input-area-sub {
@@ -319,20 +331,20 @@ onMounted(async () => {
 }
 
 .active {
-    background-color: #4a90e2;
+    background-color: #0071e2;
 }
 
 .input-area-buttons > button {
-    border: 1px solid #24b4fb;
+    border: none;
     border-radius: 0.9em;
     cursor: pointer;
     padding: 0.8em 1.2em 0.8em 1em;
     font-size: 600;
-    margin: 0 5px;
+    margin: 5px 10px;
 }
 
 .input-area-buttons > button:hover {
-    background-color: #0071e2;
+    background-color: #4a90e2;
 }
 
 #message-input {
@@ -343,8 +355,8 @@ onMounted(async () => {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-size: 1rem;
   line-height: 1.5;
-  min-height: 40px;
   max-height: 200px;
+  min-height: 40px;
   overflow-y: auto;
   color: #f0f0f0;
   background-color: transparent;

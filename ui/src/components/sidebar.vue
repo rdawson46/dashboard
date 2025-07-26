@@ -3,7 +3,7 @@
     <ul class="navbar-nav">
       <li class="logo">
         <a href="#" class="nav-link">
-          <span class="link-text logo-text">Gemini Pro</span>
+          <span class="link-text logo-text">Chat</span>
           <i class="fa-solid fa-angles-right fa-2xl"></i>
         </a>
       </li>
@@ -34,12 +34,6 @@
     </ul>
   </nav>
 </template>
-
-<script>
-export default {
-  name: 'Sidebar'
-};
-</script>
 
 <style scoped>
 .navbar {

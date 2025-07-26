@@ -15,13 +15,14 @@ The application allows users to interact with the LLM through a chat-like interf
 * Vite (Build Tool)
 * Marked (Markdown Renderer)
 * Highlight.js (Syntax Highlighting)
+* Vue-Toastify (notifications)
 
 ## To Do
-* LLM selection menu
-* tools (web search and code execution)
-* notification (toaster)
+* tools (**web search** and code execution)
+* display for *reasoning/thinking*
+* vue routing
 * LLM info page
 * db
 * login
 * auth integration
-* vue routing
+* openai/anthropic/gemini integration

@@ -192,59 +192,12 @@ func (oc OllamaClient) Stream(ctx context.Context, userReq StreamRequest, model 
         msgChan <- resp
 
 		if len(resp.Message.ToolCalls) > 0 {
-			for _, toolCall := range resp.Message.ToolCalls {
-				switch toolCall.Function.Name {
-				case "web search":
-					// will be query
-					_, ok := toolCall.Function.Arguments["query"]
+            toolResponses := toolHandler(resp.Message)
 
-					if !ok {
-						// TODO: continue
-						break
-					}
+            req.Messages = append(req.Messages, resp.Message)
+            req.Messages = append(req.Messages, toolResponses...)
 
-				case "python code execution":
-					fmt.Println("\n\nCalling Code\n\n")
-					code, ok := toolCall.Function.Arguments["code"]
-
-					if !ok {
-						// TODO: handle
-						break
-					}
-
-					c, ok := code.(string)
-
-					if !ok {
-						// TODO: handle
-						break
-					}
-
-					result, err := ExecutePython(c)
-
-					if err != nil {
-						// TODO: handle
-						fmt.Printf("\nError: %s\n", err.Error())
-						fmt.Printf("\nCode: %s\n", c)
-
-						break
-					}
-
-					content := fmt.Sprintf("Result: %s\nError: %s", result.Result, result.Error)
-
-					req.Messages = append(
-						req.Messages,
-						resp.Message,
-						api.Message{
-							Role: "tool",
-							Content: content,
-						},
-					)
-
-					return oc.client.Chat(ctx, req, handler)
-				default:
-					fmt.Println("can not find tool")
-				}
-			}
+            return oc.client.Chat(ctx, req, handler)
 		}
 
         return nil
@@ -256,4 +209,103 @@ func (oc OllamaClient) Stream(ctx context.Context, userReq StreamRequest, model 
     if err != nil {
         errChan <- err
     }
+}
+
+// pass the message?
+// return []tool response
+func toolHandler(message api.Message) []api.Message {
+    var toolResponse []api.Message
+
+    for _, toolCall := range message.ToolCalls {
+        switch toolCall.Function.Name {
+        case "web search":
+            // will be query
+            _, ok := toolCall.Function.Arguments["query"]
+
+            if !ok {
+                toolResponse = append(
+                    toolResponse,
+                    api.Message{
+                        Role: "tool",
+                        Content: "Query parameter is required",
+                    },
+                )
+                continue
+            }
+
+            toolResponse = append(
+                toolResponse,
+                api.Message{
+                    Role: "tool",
+                    Content: "Web Search tool not implemented yet",
+                },
+            )
+
+        case "python code execution":
+            code, ok := toolCall.Function.Arguments["code"]
+
+
+
+            if !ok {
+                toolResponse = append(
+                    toolResponse,
+                    api.Message{
+                        Role: "tool",
+                        Content: "Code parameter is required",
+                    },
+                )
+                continue
+            }
+
+            c, ok := code.(string)
+
+            if !ok {
+                toolResponse = append(
+                    toolResponse,
+                    api.Message{
+                        Role: "tool",
+                        Content: "Code param must be provided as a string",
+                    },
+                )
+                continue
+            }
+
+            result, err := ExecutePython(c)
+
+            if err != nil {
+                content := fmt.Sprintf("\nError: %s\n", err.Error())
+
+                toolResponse = append(
+                    toolResponse,
+                    api.Message{
+                        Role: "tool",
+                        Content: content,
+                    },
+                )
+                continue
+            }
+
+            fmt.Println("code worked")
+            content := fmt.Sprintf("Result: %s\nError: %s", result.Result, result.Error)
+
+            toolResponse = append(
+                toolResponse,
+                api.Message{
+                    Role: "tool",
+                    Content: content,
+                },
+            )
+
+        default:
+            toolResponse = append(
+                toolResponse,
+                api.Message{
+                    Role: "tool",
+                    Content: fmt.Sprintf("Failed to find tool: %s", toolCall.Function.Name),
+                },
+            )
+        }
+    }
+    
+    return toolResponse
 }

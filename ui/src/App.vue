@@ -154,12 +154,30 @@ async function stream(url, body) {
           if (jsonStr.trim()) {
             try {
               const data = JSON.parse(jsonStr);
+              console.log(data)
               if (data.done) {
+                if (data.message.content.length) {
+                  fullResponse += data.message.content
+                  assistantMessage.content = marked.parse(fullResponse);
+                }
                 apiMessages.push({ 'role': 'assistant', 'content': fullResponse });
                 
                 // store last message here
                 chatMessages.value.push({ role: 'info', content: apiMessages[apiMessages.length - 1].content, details: data });
                 return;
+              }
+
+              if (data.message.tool_calls) {
+                // TODO: throw in a UI affect to show tool calls
+                // have to append tool call messages to the apiMessages for history tracking
+                for (const toolCall of data.message.tool_calls) {
+                  let { name } = toolCall;
+
+
+
+                  console.log(toolCall)
+                }
+                continue
               }
 
               let token = data.message.content;
@@ -204,9 +222,6 @@ async function getModelList() {
         }
 
         const data = await response.json();
-
-        console.log(data)
-
         modelList.value = data
     } catch (error) {
         console.error(error)

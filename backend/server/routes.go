@@ -157,7 +157,7 @@ func streamHandler(l *log.Logger) http.HandlerFunc {
 
                 fmt.Fprintf(w, "data: %s\n\n", b)
                 flusher.Flush()
-                token_count++;
+                token_count = resp.EvalCount;
             case err, ok := <-errChan:
                 if !ok {
                     break OuterLoop

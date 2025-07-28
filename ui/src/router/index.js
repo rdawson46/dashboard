@@ -23,7 +23,7 @@ router.beforeEach((to, from, next) => {
     const token = localStorage.get('token')
 
     if ((to.path === '/login' || to.path === '/register') && token) {
-        return next('/dashnoard')
+        return next('/dashboard')
     }
 
     if (to.meta.requiresAuth && !token) {

@@ -7,7 +7,6 @@ const password = ref('');
 const passwordFieldType = ref('password');
 const passwordTouched = ref(false);
 
-
 const passwordFieldIcon = computed(() => {
   return passwordFieldType.value === 'password' ? 'fa-eye' : 'fa-eye-slash';
 });
@@ -35,7 +34,6 @@ const login = () => {
           <input :type="passwordFieldType" id="password" v-model="password" @input="validatePassword" required>
           <i :class="['fa-solid', passwordFieldIcon, 'password-toggle']" @click="togglePasswordVisibility"></i>
         </div>
-        <p v-if="passwordsMismatch && passwordTouched" class="error-message">Passwords do not match.</p>
         <button type="submit" class="login-button">Login</button>
       </form>
       <p class="register-link">Don't have an account? <router-link to="/register">Register here</router-link></p>
@@ -100,6 +98,7 @@ const login = () => {
   color: white;
   font-size: 1rem;
   transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box; 
 }
 
 .input-group input:focus {

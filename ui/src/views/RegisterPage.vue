@@ -1,34 +1,3 @@
-<template>
-  <div class="register-container">
-    <div class="register-box">
-      <h1 class="title">Register</h1>
-      <form @submit.prevent="register">
-        <div class="input-group">
-          <label for="username">Username</label>
-          <input type="text" id="username" v-model="username" required>
-        </div>
-        <div class="input-group">
-          <label for="password">Password</label>
-          <input :type="passwordFieldType" id="password" v-model="password" @input="validatePassword" required>
-          <i :class="['fa-solid', passwordFieldIcon, 'password-toggle']" @click="togglePasswordVisibility"></i>
-        </div>
-        <div class="input-group">
-          <label for="confirm-password">Confirm Password</label>
-          <input type="password" id="confirm-password" v-model="confirmPassword" @input="passwordTouched = true" required>
-        </div>
-        <div class="password-rules">
-          <p :class="{ 'valid': rules.length && passwordTouched }">8 characters minimum</p>
-          <p :class="{ 'valid': rules.uppercase && passwordTouched }">One uppercase letter</p>
-          <p :class="{ 'valid': rules.special && passwordTouched }">One special character</p>
-        </div>
-        <p v-if="passwordsMismatch && passwordTouched" class="error-message">Passwords do not match.</p>
-        <button type="submit" class="register-button">Register</button>
-      </form>
-      <p class="login-link">Already have an account? <router-link to="/login">Login here</router-link></p>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref, computed } from 'vue';
 import { RouterLink } from 'vue-router';
@@ -42,12 +11,14 @@ const passwordTouched = ref(false);
 const rules = ref({
   length: false,
   uppercase: false,
-  special: false
+  special: false,
+  number: false
 });
 
 const validatePassword = () => {
   rules.value.length = password.value.length >= 8;
   rules.value.uppercase = /[A-Z]/.test(password.value);
+  rules.value.number = /[0-9]/.test(password.value);
   rules.value.special = /[!@#$%^&*(),.?":{}|<>]/.test(password.value);
 };
 
@@ -68,7 +39,7 @@ const register = () => {
     alert("Passwords do not match!");
     return;
   }
-  if (!rules.value.length || !rules.value.uppercase || !rules.value.special) {
+  if (!rules.value.length || !rules.value.uppercase || !rules.value.special || !rules.value.number) {
     alert("Password does not meet the requirements.");
     return;
   }
@@ -76,6 +47,38 @@ const register = () => {
   alert(`Registering with username: ${username.value}`);
 };
 </script>
+
+<template>
+  <div class="register-container">
+    <div class="register-box">
+      <h1 class="title">Register</h1>
+      <form @submit.prevent="register">
+        <div class="input-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" v-model="username" required>
+        </div>
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input :type="passwordFieldType" id="password" v-model="password" @input="validatePassword" required>
+          <i :class="['fa-solid', passwordFieldIcon, 'password-toggle']" @click="togglePasswordVisibility"></i>
+        </div>
+        <div class="input-group">
+          <label for="confirm-password">Confirm Password</label>
+          <input :type="passwordFieldType" id="confirm-password" v-model="confirmPassword" @input="passwordTouched = true" required>
+        </div>
+        <div class="password-rules">
+          <p :class="{ 'valid': rules.length && passwordTouched }">8 characters minimum</p>
+          <p :class="{ 'valid': rules.number && passwordTouched }">One digit</p>
+          <p :class="{ 'valid': rules.uppercase && passwordTouched }">One uppercase letter</p>
+          <p :class="{ 'valid': rules.special && passwordTouched }">One special character</p>
+        </div>
+        <p v-if="passwordsMismatch && passwordTouched" class="error-message">Passwords do not match.</p>
+        <button type="submit" class="register-button">Register</button>
+      </form>
+      <p class="login-link">Already have an account? <router-link to="/login">Login here</router-link></p>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .register-container {
@@ -134,6 +137,7 @@ const register = () => {
   color: white;
   font-size: 1rem;
   transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box; /* Added to fix width issue */
 }
 
 .input-group input:focus {

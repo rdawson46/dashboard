@@ -1,13 +1,5 @@
-<script setup>
-    import Sidebar from './components/sidebar.vue';
-    import Chat from './components/Chat.vue';
-</script>
-
 <template>
-  <div id="app-container">
-    <Sidebar />
-    <Chat/>
-  </div>
+  <router-view />
 </template>
 
 <style scoped>

@@ -1,6 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import LandingPage from '../views/LandingPage.vue'
+import LoginPage from '../views/LoginPage.vue'
+import RegisterPage from '../views/RegisterPage.vue'
+import ChatPage from '../views/ChatPage.vue'
 
-// TODO: define the views
 const routes = [
     { path: '/', component: LandingPage },
     { path: '/login', component: LoginPage },
@@ -8,29 +11,12 @@ const routes = [
     { 
         path: '/chat',
         component: ChatPage,
-        meta: { requiresAuth: true }
     }
 ]
 
 const router = createRouter({
     history: createWebHistory(),
     routes
-})
-
-router.beforeEach((to, from, next) => {
-    // TODO: swap this out later
-    // will have to reach out to server to verify
-    const token = localStorage.get('token')
-
-    if ((to.path === '/login' || to.path === '/register') && token) {
-        return next('/dashboard')
-    }
-
-    if (to.meta.requiresAuth && !token) {
-        return next('/login')
-    }
-
-    next()
 })
 
 export default router

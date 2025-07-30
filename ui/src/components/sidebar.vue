@@ -1,3 +1,18 @@
+<script setup>
+import { ref, onMounted } from 'vue';
+
+const history = ref([])
+
+
+function getHistory() {
+
+}
+
+onMounted(() => {
+
+})
+</script>
+
 <template>
   <nav class="navbar">
     <ul class="navbar-nav">
@@ -25,12 +40,6 @@
           <span class="link-text">Settings</span>
         </a>
       </li>
-      <li class="nav-item" id="themeButton">
-        <a href="#" class="nav-link">
-          <i class="fa-solid fa-moon fa-2xl"></i>
-          <span class="link-text">Theme</span>
-        </a>
-      </li>
     </ul>
   </nav>
 </template>
@@ -41,6 +50,7 @@
   background-color: #2c3e50;
   transition: width 200ms ease;
   z-index: 1000;
+  width: 16rem;
 }
 
 .navbar-nav {
@@ -55,10 +65,6 @@
 
 .nav-item {
   width: 100%;
-}
-
-.nav-item:last-child {
-  margin-top: auto;
 }
 
 .nav-link {
@@ -78,7 +84,6 @@
 }
 
 .link-text {
-  display: none;
   margin-left: 1rem;
   white-space: nowrap;
   font-size: 1.2rem;
@@ -103,23 +108,18 @@
 }
 
 .logo i {
-  transform: rotate(0deg);
+  transform: rotate(-180deg);
   transition: transform 200ms ease;
 }
 
 .navbar:hover .logo i {
-  transform: rotate(-180deg);
+  transform: rotate(0);
 }
 
 @media only screen and (min-width: 600px) {
   .navbar {
     top: 0;
-    width: 6rem;
     height: 100vh;
-  }
-
-  .navbar:hover {
-    width: 16rem;
   }
 
   .navbar:hover .link-text {

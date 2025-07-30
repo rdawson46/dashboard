@@ -292,7 +292,7 @@ onMounted(async () => {
   flex-direction: column;
   height: 100% - 40px;
   padding: 20px;
-  margin-left: 6rem; /* Adjust for sidebar width */
+  margin-left: 16rem;
   transition: margin-left 200ms ease;
   align-items: center;
 }
@@ -384,12 +384,6 @@ onMounted(async () => {
 
 #send-btn:hover {
   color: #81b2f3;
-}
-
-@media only screen and (min-width: 600px) {
-  .navbar:hover ~ #main-content {
-    margin-left: 16rem;
-  }
 }
 </style>
 

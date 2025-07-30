@@ -11,14 +11,17 @@ def run_code():
         return jsonify({'error': "no json provided"})
 
     code = request.json.get('code', "")
+
+    if not code:
+        return jsonify({'error': "no code provided"})
+
     output = io.StringIO()
 
-    # safe_globals = {'__builtins__': {print}}
+    # safe_globals = {'__builtins__': {'print': print}}
     try:
         with contextlib.redirect_stdout(output):
             # exec(code, safe_globals)
             exec(code)
-        print("Value from code", output.getvalue())
         return jsonify({'result': output.getvalue()})
     except Exception as e:
         print(e)
@@ -31,7 +34,16 @@ def web_search():
         return jsonify({'error': "no json provided"})
 
     query = request.json.get('query', "")
-    return jsonify({'result': query})
+
+    print(query)
+    if not query:
+        return jsonify({'error': "no query provided"})
+
+    try:
+        raise Exception('Not implemented yet')
+        return jsonify({'result': results})
+    except Exception as e:
+        return jsonify({'error': f"Error during web search: {e}"})
 
 
 if __name__ == '__main__':

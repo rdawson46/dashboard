@@ -10,8 +10,8 @@ import (
 	"os"
 )
 
-func ExecutePython(code string) (*ToolResult, error) {
-	reqData := map[string]string{"code": code}
+func WebSearch(query string) (*ToolResult, error) {
+	reqData := map[string]string{"query": query}
 
 	jsonReq, err := json.Marshal(reqData)
 
@@ -19,6 +19,7 @@ func ExecutePython(code string) (*ToolResult, error) {
 		return nil, err
 	}
 
+	// TODO: rename this route 
 	url := os.Getenv("CODE_URL")
 
 	if url == "" {
@@ -27,7 +28,7 @@ func ExecutePython(code string) (*ToolResult, error) {
 
 	bodyReader := bytes.NewBuffer(jsonReq)
 
-	req, err := http.NewRequest(http.MethodPost, url + "/run", bodyReader)
+	req, err := http.NewRequest(http.MethodPost, url + "/websearch", bodyReader)
 
 	if err != nil {
 		return nil, err

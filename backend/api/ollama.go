@@ -220,7 +220,7 @@ func toolHandler(message api.Message) []api.Message {
         switch toolCall.Function.Name {
         case "web search":
             // will be query
-            _, ok := toolCall.Function.Arguments["query"]
+            query, ok := toolCall.Function.Arguments["query"]
 
             if !ok {
                 toolResponse = append(
@@ -233,11 +233,41 @@ func toolHandler(message api.Message) []api.Message {
                 continue
             }
 
+			q, ok := query.(string)
+
+			if !ok {
+                toolResponse = append(
+                    toolResponse,
+                    api.Message{
+                        Role: "tool",
+                        Content: "Query param must be provided as a string",
+                    },
+                )
+                continue
+			}
+
+			result, err := WebSearch(q)
+
+			if err != nil {
+                content := fmt.Sprintf("\nError: %s\n", err.Error())
+
+                toolResponse = append(
+                    toolResponse,
+                    api.Message{
+                        Role: "tool",
+                        Content: content,
+                    },
+                )
+                continue
+			}
+
+            content := fmt.Sprintf("Result: %s\nError: %s", result.Result, result.Error)
+
             toolResponse = append(
                 toolResponse,
                 api.Message{
                     Role: "tool",
-                    Content: "Web Search tool not implemented yet",
+                    Content: content,
                 },
             )
 

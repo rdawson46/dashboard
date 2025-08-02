@@ -10,9 +10,18 @@ import (
 	"github.com/rdawson46/dashboard/server"
 )
 
+// TODO: need to run migrations on startup
 func run() error {
+	db, err := server.NewSqliteRepository()
+
+	if err != nil {
+		return err
+	}
+	
+	defer db.Close()
+
     config := server.NewConfig(8000, 300, 100, 100)
-    s := server.NewServer(config)
+    s := server.NewServer(config, db)
 
     if err := s.Start(); err != nil {
         log.Fatal(err)

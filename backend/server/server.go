@@ -33,9 +33,10 @@ type Server struct {
     httpServer *http.Server
     rateLimiter *rate.Limiter
     logger *log.Logger
+	db UserRepository
 }
 
-func NewServer(config ServerConfig) *Server {
+func NewServer(config ServerConfig, db UserRepository) *Server {
     logger := log.NewWithOptions(os.Stderr, log.Options{
         ReportCaller: true,
     })
@@ -43,6 +44,7 @@ func NewServer(config ServerConfig) *Server {
     return &Server{
         config: config,
         logger: logger,
+		db: db,
         rateLimiter: rate.NewLimiter(
             rate.Limit(config.RateLimitReq),
             config.RateLimitBurst,

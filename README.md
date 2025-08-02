@@ -18,12 +18,14 @@ The application allows users to interact with the LLM through a chat-like interf
 * Vue-Toastify (notifications)
 
 ## To Do
+* db
+* vue routing
 * tools (**web search** and code execution)
     - improve code execution prompting
-* display for *reasoning/thinking*
-* vue routing
+* display:
+    - *reasoning/thinking*
+    - tool calls
 * LLM info page
-* db
 * login
 * auth integration
 * openai/anthropic/gemini integration

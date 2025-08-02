@@ -3,11 +3,9 @@ package server
 import (
     "context"
     "database/sql"
-    // "encoding/json"
     "errors"
     "fmt"
-    // "net/http"
-    // "strconv"
+	"os"
     "time"
 
 	// "github.com/charmbracelet/log"
@@ -36,19 +34,30 @@ var (
 )
 
 type UserRepository interface {
-    /*
-    GetUser(ctx context.Context, id int64) (*User, error)
-    GetUsers(ctx context.Context, limit, offset int64) ([]*User, error)
+    GetUser(ctx context.Context, id int64) (*User_db, error)
+    GetUsers(ctx context.Context, limit, offset int64) ([]*User_db, error)
     GetUserCount(ctx context.Context) (int64, error)
-    */
+	Close() error
 }
 
 type sqliteUserRepo struct {
     db *sql.DB
 }
 
-func NewUserRepository(db *sql.DB) UserRepository {
-    return &sqliteUserRepo{db: db}
+func NewSqliteRepository() (UserRepository, error) {
+	db_url := os.Getenv("DB_URL")
+
+	if db_url == "" {
+		return nil, errors.New("No DB URL found in env")
+	}
+
+	db, err := sql.Open("sqlite", db_url)
+
+	if err != nil {
+		return nil, err
+	}
+
+    return &sqliteUserRepo{db: db}, nil
 }
 
 func (r *sqliteUserRepo) GetUser(ctx context.Context, id int64) (*User_db, error) {
@@ -108,4 +117,8 @@ func (r *sqliteUserRepo) GetUserCount(ctx context.Context) (int64, error) {
     }
 
     return count, nil
+}
+
+func (r *sqliteUserRepo) Close() error {
+	return r.db.Close()
 }

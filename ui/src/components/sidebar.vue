@@ -1,45 +1,52 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 
-const history = ref([])
+const history = ref([]);
 
-
-function getHistory() {
-
+async function getHistory() {
+  const res = await fetch('/api/chatDescription');
+  const data = await res.json();
+  return data;
 }
-
-onMounted(() => {
-
-})
+onMounted(async () => {
+    const hist = await getHistory();
+    history.value = hist;
+});
 </script>
 
 <template>
   <nav class="navbar">
     <ul class="navbar-nav">
       <li class="logo">
-        <a href="#" class="nav-link">
+        <div class="nav-link">
           <span class="link-text logo-text">Chat</span>
           <i class="fa-solid fa-angles-right fa-2xl"></i>
-        </a>
+        </div>
       </li>
       <li class="nav-item">
-        <a href="#" class="nav-link">
-          <i class="fa-solid fa-house fa-2xl"></i>
-          <span class="link-text">Dashboard</span>
-        </a>
+        <div class="nav-link">
+          <span class="link-text">Profile</span>
+        </div>
       </li>
       <li class="nav-item">
-        <a href="#" class="nav-link">
-          <i class="fa-solid fa-comment fa-2xl"></i>
-          <span class="link-text">Chat</span>
-        </a>
+        <div class="nav-link">
+          <span class="link-text"><a href="/models">Model</a></span>
+        </div>
       </li>
+
       <li class="nav-item">
-        <a href="#" class="nav-link">
-          <i class="fa-solid fa-gear fa-2xl"></i>
-          <span class="link-text">Settings</span>
-        </a>
+        <div class="nav-link">
+          <span class="link-text">Chats</span>
+        </div>
+
       </li>
+      <ul class="desc-list">
+        <template v-for="h in history">
+          <li class="description">
+            {{h.description}}
+          </li>
+        </template>
+      </ul>
     </ul>
   </nav>
 </template>

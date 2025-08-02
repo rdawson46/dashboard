@@ -23,6 +23,11 @@ type HealthResponse struct {
 
 // ========== ROUTING FUNCTIONS ==========
 func index(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.Error(w, "Page Not Found", http.StatusNotFound)
+		return
+	}
+
     healthCheck(w, r)
 }
 
@@ -263,13 +268,35 @@ func modelShowHandler(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(resp)
 }
 
+// TODO: have to get the user ID from content
+func chatDescriptionHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+		return
+	}
 
-func searchHandler(w http.ResponseWriter, r *http.Request) {
-    response := map[string]string{"message": "chat"}
+    type chatDesc struct {
+        Description string `json:"description"`
+    }
+
+	// TEMP: placeholder until db is set up
+	history := []chatDesc{
+		{
+			Description: "questions",
+		},
+		{
+			Description: "answers",
+		},
+		{
+			Description: "coding",
+		},
+	}
+
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(response)
+    json.NewEncoder(w).Encode(history)
 }
+
 
 func loginHandler(jwtManager *JWTManager) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
@@ -422,10 +449,6 @@ func addRoutes(h *http.ServeMux, s *Server) {
     ))
 
     // api auth handler
-    h.HandleFunc("/api/search", jwt_manager.AuthApiMiddleware(
-        s.rateLimitMiddleware(searchHandler),
-    ))
-
     h.HandleFunc("/api/chat", jwt_manager.AuthApiMiddleware(
         s.rateLimitMiddleware(chatHandler),
     ))
@@ -434,6 +457,8 @@ func addRoutes(h *http.ServeMux, s *Server) {
     h.HandleFunc("/api/stream", streamHandler(s.logger))
     h.HandleFunc("/api/modelList", modelListHandler)
     h.HandleFunc("/api/modelInfo", modelShowHandler)
+
+	h.HandleFunc("/api/chatDescription", chatDescriptionHandler)
 }
 
 // =======================================

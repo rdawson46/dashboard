@@ -237,11 +237,17 @@ onMounted(async () => {
 <template>
     <main id="main-content">
 
-      <select name="model" id="modelSelector" ref="modelSelector">
+      <div class="headers">
+        <button>New Chat</button>
+
+        <select name="model" id="modelSelector" ref="modelSelector">
+
           <template v-for="model in modelList">
-              <option :value="model.model">{{model.name}}</option>
+            <option :value="model.model">{{model.name}}</option>
           </template>
-      </select>
+
+        </select>
+      </div>
 
       <div id="chat-container" ref="chatContainer" :class="{ 'hidden': !chatMessages.length }">
         <template v-for="(message, index) in chatMessages" :key="index">
@@ -249,10 +255,13 @@ onMounted(async () => {
 
           <div v-else class="info">
               <i class="fa-solid fa-circle-info hover-info"></i>
+              <!-- TODO: format the decimals to 2 places -->
               <div class='hidden-info'>
-                  Time: {{message.details.total_duration / 1_000_000_000}}(s)
+                  Time: {{ (message.details.total_duration / 1_000_000_000).toFixed(2)}}(s)
                   <br>
                   Tokens: {{message.details.eval_count}}
+                  <br>
+                  Tokens/Sec: {{ (message.details.eval_count / (message.details.total_duration / 1_000_000_000)).toFixed(2) }}
               </div>
               <i class="fa-solid fa-clipboard" @click="copyToClip(message.content)"></i>
           </div>
@@ -266,7 +275,6 @@ onMounted(async () => {
                   @keydown.down.exact.prevent="navigateHistoryDown()" 
                   @keydown.up.exact.prevent="navigateHistoryUp()" 
                   @keydown.enter.exact.prevent="query"></div>
-              <button id="send-btn" @click='query'><i class="fa-solid fa-paper-plane"></i></button>
           </div>
 
           <div class="input-area-buttons">
@@ -278,6 +286,7 @@ onMounted(async () => {
                   <i class="fa-solid fa-code"></i>
                   Code
               </button>
+              <button id="send-btn" @click='query'><i class="fa-solid fa-paper-plane"></i></button>
           </div>
 
       </div>
@@ -331,12 +340,13 @@ onMounted(async () => {
   align-items: center;
 }
 
-.input-area-buttons {
-    width: fit-content;
-}
-
 .active {
     background-color: #0071e2;
+}
+
+.input-area-buttons {
+    width: 100%;
+    display: flex;
 }
 
 .input-area-buttons > button {
@@ -348,13 +358,17 @@ onMounted(async () => {
     margin: 5px 10px;
 }
 
+.input-area-buttons button:last-child {
+    margin-left: auto;
+}
+
 .input-area-buttons > button:hover {
     background-color: #4a90e2;
 }
 
 #message-input {
   flex-grow: 1;
-  padding: 10px;
+  padding: 5px 5px 0 5px;
   border: none;
   resize: none;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -476,7 +490,7 @@ code {
     background-color: #232323;
     padding: 5px;
     border-radius: 5px;
-    top: -60px;
+    top: -80px;
     white-space: nowrap;
     background-color: #3a3a3a;
 }

@@ -255,7 +255,6 @@ onMounted(async () => {
 
           <div v-else class="info">
               <i class="fa-solid fa-circle-info hover-info"></i>
-              <!-- TODO: format the decimals to 2 places -->
               <div class='hidden-info'>
                   Time: {{ (message.details.total_duration / 1_000_000_000).toFixed(2)}}(s)
                   <br>

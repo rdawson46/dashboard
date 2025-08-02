@@ -135,7 +135,7 @@ func (oc OllamaClient) GetShow(ctx context.Context, model string) (*ShowResponse
     req := &api.ShowRequest {
         Model: model,
     }
-    // TODO: simplify response for UI, remove extra fields that won't be used
+
     res, err := oc.client.Show(ctx, req)
 
     if err != nil {

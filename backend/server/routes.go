@@ -220,14 +220,12 @@ func modelListHandler(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(resp.Models)
 }
 
-// TODO: get model name
 func modelShowHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodPost {
         http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
         return
     }
 
-    // TODO: get model name from the request body
     type request struct {
         Model string `json:"model"`
     }
@@ -268,7 +266,7 @@ func modelShowHandler(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(resp)
 }
 
-// TODO: have to get the user ID from content
+// TODO: have to get the user ID from content, requires DB setup
 func chatDescriptionHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
@@ -436,6 +434,7 @@ func addRoutes(h *http.ServeMux, s *Server) {
     h.HandleFunc("/health", healthCheck)
 
     // user status routes
+	// TODO: will have to set up as an api and requires DB
     h.HandleFunc("/login", loginHandler(jwt_manager))
     h.HandleFunc("/logout", logoutHandler(jwt_manager))
     h.HandleFunc("/reresh", refreshHandler(jwt_manager))

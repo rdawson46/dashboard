@@ -40,6 +40,8 @@ func main() {
         log.Fatal("Error loading .env file:", err)
     }
 
+	server.InitialEnvCheck()
+
     if err := run(); err != nil {
         log.Fatal("Error running server:", err)
     }

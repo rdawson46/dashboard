@@ -43,13 +43,29 @@ func NewServer(config ServerConfig, db UserRepository) *Server {
 
     return &Server{
         config: config,
-        logger: logger,
+        logger: logger, 
 		db: db,
         rateLimiter: rate.NewLimiter(
             rate.Limit(config.RateLimitReq),
             config.RateLimitBurst,
         ),
     }
+}
+
+func InitialEnvCheck() {
+	required_envs := []string{
+		"OLLAMA_URL",
+		"CODE_URL",
+		"DB_URL",
+	}
+
+	for _, env := range required_envs {
+		val := os.Getenv(env)
+		if val == "" {
+			fmt.Printf("Missing env: %s\n", env)
+			os.Exit(1)
+		}
+	}
 }
 
 

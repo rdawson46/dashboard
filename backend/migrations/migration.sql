@@ -8,4 +8,5 @@ CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY,
     user_id INTEGER NOT NULL,
     messages TEXT NOT NULL,
+    description TEXT NOT NULL
 );

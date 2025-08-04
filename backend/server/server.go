@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"golang.org/x/time/rate"
+	db "github.com/rdawson46/dashboard/db"
 )
 
 type ServerConfig struct {
@@ -33,10 +34,10 @@ type Server struct {
     httpServer *http.Server
     rateLimiter *rate.Limiter
     logger *log.Logger
-	db UserRepository
+	db db.UserRepository
 }
 
-func NewServer(config ServerConfig, db UserRepository) *Server {
+func NewServer(config ServerConfig, db db.UserRepository) *Server {
     logger := log.NewWithOptions(os.Stderr, log.Options{
         ReportCaller: true,
     })

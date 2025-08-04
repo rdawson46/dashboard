@@ -1,14 +1,12 @@
-package server
+package db
 
 import (
     "context"
     "database/sql"
     "errors"
     "fmt"
-	"os"
     "time"
 
-	// "github.com/charmbracelet/log"
     _ "modernc.org/sqlite"
 )
 
@@ -30,37 +28,9 @@ type UserErrorResponse struct {
 var (
     ErrUserNotFound = errors.New("user not found")
     ErrInvalidUserId = errors.New("invalid user ID")
-    ErrDatabaseError = errors.New("database error")
 )
 
-type UserRepository interface {
-    GetUser(ctx context.Context, id int64) (*User_db, error)
-    GetUsers(ctx context.Context, limit, offset int64) ([]*User_db, error)
-    GetUserCount(ctx context.Context) (int64, error)
-	Close() error
-}
-
-type sqliteUserRepo struct {
-    db *sql.DB
-}
-
-func NewSqliteRepository() (UserRepository, error) {
-	db_url := os.Getenv("DB_URL")
-
-	if db_url == "" {
-		return nil, errors.New("No DB URL found in env")
-	}
-
-	db, err := sql.Open("sqlite", db_url)
-
-	if err != nil {
-		return nil, err
-	}
-
-    return &sqliteUserRepo{db: db}, nil
-}
-
-func (r *sqliteUserRepo) GetUser(ctx context.Context, id int64) (*User_db, error) {
+func (r *sqliteRepo) GetUser(ctx context.Context, id int64) (*User_db, error) {
     query := `SELECT id, name, email, created_at FROM users WHERE id = ?`
 
     row := r.db.QueryRowContext(ctx, query, id)
@@ -77,7 +47,7 @@ func (r *sqliteUserRepo) GetUser(ctx context.Context, id int64) (*User_db, error
     return &user, nil
 }
 
-func (r *sqliteUserRepo) GetUsers(ctx context.Context, limit, offset int64) ([]*User_db, error){
+func (r *sqliteRepo) GetUsers(ctx context.Context, limit, offset int64) ([]*User_db, error){
     query := `SELECT id, name, email, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?`
 
     rows, err := r.db.QueryContext(ctx, query, limit, offset)
@@ -106,7 +76,7 @@ func (r *sqliteUserRepo) GetUsers(ctx context.Context, limit, offset int64) ([]*
     return users, nil
 }
 
-func (r *sqliteUserRepo) GetUserCount(ctx context.Context) (int64, error) {
+func (r *sqliteRepo) GetUserCount(ctx context.Context) (int64, error) {
     query := `SELECT COUNT(*) FROM users`
 
     var count int64
@@ -119,6 +89,6 @@ func (r *sqliteUserRepo) GetUserCount(ctx context.Context) (int64, error) {
     return count, nil
 }
 
-func (r *sqliteUserRepo) Close() error {
-	return r.db.Close()
-}
+// TODO:
+func (r *sqliteRepo) UpdateUser() ()
+func (r *sqliteRepo) CreateUser() ()

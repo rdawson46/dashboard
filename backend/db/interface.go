@@ -10,7 +10,7 @@ type Repository interface {
     GetUsers(ctx context.Context, limit, offset int64) ([]*User_db, error)
     GetUserCount(ctx context.Context) (int64, error)
 
-    CreateUser() ()
+    CreateUser(ctx context.Context, username, password string) (*User_db, error)
     UpdateUser() ()
 
 

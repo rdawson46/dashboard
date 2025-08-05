@@ -18,9 +18,9 @@ var (
 )
 
 // TODO:
-func (r *sqliteRepo) GetMessage() () 
-func (r *sqliteRepo) GetMessages() ()
-func (r *sqliteRepo) GetMessageCount() ()
-func (r *sqliteRepo) CreateMessage() ()
-func (r *sqliteRepo) UpdateMessage() ()
-func (r *sqliteRepo) GetDescriptions() ()
+func (r *sqliteRepo) GetMessage() () {}
+func (r *sqliteRepo) GetMessages() () {}
+func (r *sqliteRepo) GetMessageCount() () {}
+func (r *sqliteRepo) CreateMessage() () {}
+func (r *sqliteRepo) UpdateMessage() () {}
+func (r *sqliteRepo) GetDescriptions() () {}

@@ -90,5 +90,5 @@ func (r *sqliteRepo) GetUserCount(ctx context.Context) (int64, error) {
 }
 
 // TODO:
-func (r *sqliteRepo) UpdateUser() ()
-func (r *sqliteRepo) CreateUser() ()
+func (r *sqliteRepo) UpdateUser() () {}
+func (r *sqliteRepo) CreateUser() () {}

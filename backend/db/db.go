@@ -4,7 +4,11 @@ import (
     "database/sql"
     "errors"
 	"os"
+    "fmt"
 
+    "github.com/golang-migrate/migrate/v4"
+    _ "github.com/golang-migrate/migrate/v4/database/sqlite"
+    _ "github.com/golang-migrate/migrate/v4/source/file"
     _ "modernc.org/sqlite"
 )
 
@@ -14,6 +18,7 @@ type sqliteRepo struct {
     db *sql.DB
 }
 
+// TODO: run the db migrations on start up
 func NewSqliteRepository() (Repository, error) {
 	db_url := os.Getenv("DB_URL")
 
@@ -26,6 +31,20 @@ func NewSqliteRepository() (Repository, error) {
 	if err != nil {
 		return nil, err
 	}
+
+    // migrations
+    m, err := migrate.New(
+        "file://db/migrations", // TODO: move migrations dir and name files
+        fmt.Sprintf("sqlite://%s", db_url),
+    )
+
+	if err != nil {
+		return nil, err
+	}
+
+    if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return nil, err
+    }
 
     return &sqliteRepo{db: db}, nil
 }

@@ -34,10 +34,10 @@ type Server struct {
     httpServer *http.Server
     rateLimiter *rate.Limiter
     logger *log.Logger
-	db db.UserRepository
+	db db.Repository
 }
 
-func NewServer(config ServerConfig, db db.UserRepository) *Server {
+func NewServer(config ServerConfig, db db.Repository) *Server {
     logger := log.NewWithOptions(os.Stderr, log.Options{
         ReportCaller: true,
     })

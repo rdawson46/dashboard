@@ -16,6 +16,7 @@ const rules = ref({
 });
 
 const validatePassword = () => {
+  passwordTouched.value = true;
   rules.value.length = password.value.length >= 8;
   rules.value.uppercase = /[A-Z]/.test(password.value);
   rules.value.number = /[0-9]/.test(password.value);
@@ -34,7 +35,7 @@ const togglePasswordVisibility = () => {
   passwordFieldType.value = passwordFieldType.value === 'password' ? 'text' : 'password';
 };
 
-const register = () => {
+const register = async () => {
   if (passwordsMismatch.value) {
     alert("Passwords do not match!");
     return;
@@ -64,13 +65,13 @@ const register = () => {
         </div>
         <div class="input-group">
           <label for="confirm-password">Confirm Password</label>
-          <input :type="passwordFieldType" id="confirm-password" v-model="confirmPassword" @input="passwordTouched = true" required>
+          <input :type="passwordFieldType" id="confirm-password" v-model="confirmPassword" required>
         </div>
         <div class="password-rules">
-          <p :class="{ 'valid': rules.length && passwordTouched }">8 characters minimum</p>
-          <p :class="{ 'valid': rules.number && passwordTouched }">One digit</p>
-          <p :class="{ 'valid': rules.uppercase && passwordTouched }">One uppercase letter</p>
-          <p :class="{ 'valid': rules.special && passwordTouched }">One special character</p>
+          <p :class="{ 'valid': rules.length && passwordTouched, 'invalid': !rules.length && passwordTouched, 'untouched': !passwordTouched }">8 characters minimum</p>
+          <p :class="{ 'valid': rules.number && passwordTouched, 'invalid': !rules.length && passwordTouched, 'untouched': !passwordTouched }">One digit</p>
+          <p :class="{ 'valid': rules.uppercase && passwordTouched, 'invalid': !rules.length && passwordTouched, 'untouched': !passwordTouched  }">One uppercase letter</p>
+          <p :class="{ 'valid': rules.special && passwordTouched, 'invalid': !rules.length && passwordTouched, 'untouched': !passwordTouched  }">One special character</p>
         </div>
         <p v-if="passwordsMismatch && passwordTouched" class="error-message">Passwords do not match.</p>
         <button type="submit" class="register-button">Register</button>
@@ -170,6 +171,10 @@ const register = () => {
   text-align: left;
   font-size: 0.8rem;
   margin-bottom: 1rem;
+  color: #cccccc;
+}
+
+.password-rules p.invalid {
   color: #ff6b6b;
 }
 

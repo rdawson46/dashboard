@@ -8,11 +8,12 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/rdawson46/dashboard/server"
+	"github.com/rdawson46/dashboard/db"
 )
 
 // TODO: need to run migrations on startup
 func run() error {
-	db, err := server.NewSqliteRepository()
+	db, err := db.NewSqliteRepository()
 
 	if err != nil {
 		return err

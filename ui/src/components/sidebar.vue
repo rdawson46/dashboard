@@ -1,16 +1,35 @@
 <script setup>
 import { ref, onMounted } from 'vue';
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 const history = ref([]);
 
-async function getHistory() {
-  const res = await fetch('/api/chatDescription');
-  const data = await res.json();
-  return data;
+function notify(message) {
+    toast(message, {
+        autoClose: 1000,
+        theme: 'dark',
+    });
 }
+
+async function getHistory() {
+  try{
+    const res = await fetch('/api/chatDescription');
+    const data = await res.json();
+    return data;
+  } catch (e) {
+    notify(`Can't get chat history`)
+    throw e
+  }
+}
+
 onMounted(async () => {
-    const hist = await getHistory();
-    history.value = hist;
+    try {
+      const hist = await getHistory();
+      history.value = hist;
+    } catch (e) {
+      console.error(e)
+    }
 });
 </script>
 
@@ -41,11 +60,15 @@ onMounted(async () => {
 
       </li>
       <ul class="desc-list">
+
+        <!-- TODO: make this not bad and add a delete button -->
+        <!-- TODO: and paginate this api -->
         <template v-for="h in history">
           <li class="description">
             {{h.description}}
           </li>
         </template>
+
       </ul>
     </ul>
   </nav>

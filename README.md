@@ -19,6 +19,9 @@ The application allows users to interact with the LLM through a chat-like interf
 
 ## To Do
 * db
+    - users
+    - messages
+    - tokens
 * vue routing
 * tools (**web search** and code execution)
     - improve code execution prompting

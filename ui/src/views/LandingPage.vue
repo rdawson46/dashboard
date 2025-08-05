@@ -57,6 +57,16 @@ import { RouterLink } from 'vue-router'
   overflow: hidden;
 }
 
+.landing-container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    backdrop-filter: blur(5px);
+}
+
 .hero-content {
   max-width: 800px;
   padding: 2rem;
@@ -65,6 +75,7 @@ import { RouterLink } from 'vue-router'
   backdrop-filter: blur(5px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   animation: float-animation 6s ease-in-out infinite, fade-in 1s ease-out forwards;
+  z-index: 10;
 }
 
 .main-headline {

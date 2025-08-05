@@ -53,6 +53,16 @@ const login = () => {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.login-container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    backdrop-filter: blur(5px);
+}
+
 .login-box {
   background: rgba(0, 0, 0, 0.3);
   padding: 2.5rem;
@@ -63,6 +73,7 @@ const login = () => {
   max-width: 400px;
   text-align: center;
   animation: fade-in 0.5s ease-out forwards;
+  z-index: 10;
 }
 
 @keyframes fade-in {

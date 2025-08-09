@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	ollama "github.com/ollama/ollama/api"
-	"github.com/charmbracelet/log"
 	api "github.com/rdawson46/dashboard/api"
 )
 
@@ -82,108 +81,106 @@ func chatHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // will work on to replace the chatHandler
-func streamHandler(l *log.Logger) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        if r.Method != http.MethodPost {
-            http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-            return
-        }
+func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 
-        // headers for SSE
-        w.Header().Set("Content-Type", "text/event-stream")
-        w.Header().Set("Cache-Control", "no-cache")
-        w.Header().Set("Connection", "keep-alive")
-        w.Header().Set("Access-Control", "*")
+	// headers for SSE
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control", "*")
 
 
-        flusher, ok := w.(http.Flusher)
+	flusher, ok := w.(http.Flusher)
 
-        if !ok {
-			l.Error("Failed to get flusher")
-            http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
-            return
-        }
+	if !ok {
+		s.logger.Error("Failed to get flusher")
+		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+		return
+	}
 
-        var chatReq api.StreamRequest
-        err := json.NewDecoder(r.Body).Decode(&chatReq)
+	var chatReq api.StreamRequest
+	err := json.NewDecoder(r.Body).Decode(&chatReq)
 
-        if err != nil {
-			l.Error(err.Error())
-            http.Error(w, err.Error(), http.StatusBadRequest)
-            return
-        }
+	if err != nil {
+		s.logger.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-		url := os.Getenv("OLLAMA_URL")
+	url := os.Getenv("OLLAMA_URL")
 
-		if url == "" {
-			l.Error("Ollama URL not set")
-			http.Error(w, "Ollama URL not set", http.StatusInternalServerError)
+	if url == "" {
+		s.logger.Error("Ollama URL not set")
+		http.Error(w, "Ollama URL not set", http.StatusInternalServerError)
+		return
+	}
+
+	ctx := r.Context()
+
+	oc, err := api.NewOllamaClient(url)
+
+	if err != nil {
+		s.logger.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return 
+	}
+
+	msgChan := make(chan ollama.ChatResponse)
+	errChan := make(chan error)
+
+	s.logger.Info(
+		"Starting stream",
+		"model", chatReq.Model,
+		"remote", r.RemoteAddr,
+	)
+
+	go oc.Stream(ctx, chatReq, chatReq.Model, msgChan, errChan)
+
+	token_count := 0
+	OuterLoop:
+	for {
+		select {
+		case resp, ok := <-msgChan:
+			if !ok {
+				break OuterLoop
+			}
+
+			// encode resp
+			b, err := json.Marshal(resp)
+
+			if err != nil {
+				s.logger.Error(err.Error())
+				http.Error(w, "failed to marshal resp", http.StatusInternalServerError)
+				return
+			}
+
+			fmt.Fprintf(w, "data: %s\n\n", b)
+			flusher.Flush()
+			token_count = resp.EvalCount;
+		case err, ok := <-errChan:
+			if !ok {
+				break OuterLoop
+			}
+
+			// HACK: replace error message
+			s.logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+	}
 
-        ctx := r.Context()
+	s.logger.Info(
+		"Streaming finished",
+		"token_count", token_count,
+		"remote", r.RemoteAddr,
+	)
 
-        oc, err := api.NewOllamaClient(url)
-
-        if err != nil {
-			l.Error(err.Error())
-            http.Error(w, err.Error(), http.StatusBadRequest)
-            return 
-        }
-
-        msgChan := make(chan ollama.ChatResponse)
-        errChan := make(chan error)
-
-        l.Info(
-            "Starting stream",
-			"model", chatReq.Model,
-            "remote", r.RemoteAddr,
-        )
-
-        go oc.Stream(ctx, chatReq, chatReq.Model, msgChan, errChan)
-
-        token_count := 0
-        OuterLoop:
-        for {
-            select {
-            case resp, ok := <-msgChan:
-                if !ok {
-                    break OuterLoop
-                }
-
-                // encode resp
-                b, err := json.Marshal(resp)
-
-                if err != nil {
-					l.Error(err.Error())
-                    http.Error(w, "failed to marshal resp", http.StatusInternalServerError)
-                    return
-                }
-
-                fmt.Fprintf(w, "data: %s\n\n", b)
-                flusher.Flush()
-                token_count = resp.EvalCount;
-            case err, ok := <-errChan:
-                if !ok {
-                    break OuterLoop
-                }
-
-                // HACK: replace error message
-				l.Error(err.Error())
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-                return
-            }
-        }
-
-        l.Info(
-            "Streaming finished",
-            "token_count", token_count,
-            "remote", r.RemoteAddr,
-        )
-
-        fmt.Fprintf(w, "data: %s\n\n", `{"done": true}`)
-        flusher.Flush()
-    }
+	fmt.Fprintf(w, "data: %s\n\n", `{"done": true}`)
+	flusher.Flush()
 }
 
 func modelListHandler(w http.ResponseWriter, r *http.Request) {
@@ -488,11 +485,9 @@ func addRoutes(h *http.ServeMux, s *Server) {
         s.rateLimitMiddleware(chatHandler),
     ))
 
-    // HACK: need to add auth around these and limitMiddleware
-	// TODO: add to (s *Server) for logging
-    h.HandleFunc("/api/stream", streamHandler(s.logger))
-    h.HandleFunc("/api/modelList", modelListHandler)
-    h.HandleFunc("/api/modelInfo", modelShowHandler)
+    h.HandleFunc("/api/stream", s.jwt_manager.AuthApiMiddleware(s.streamHandler))
+    h.HandleFunc("/api/modelList", s.jwt_manager.AuthApiMiddleware(modelListHandler))
+    h.HandleFunc("/api/modelInfo", s.jwt_manager.AuthApiMiddleware(modelShowHandler))
 
 	h.HandleFunc("/api/chatDescription", chatDescriptionHandler)
 

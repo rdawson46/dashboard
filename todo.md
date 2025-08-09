@@ -1,6 +1,11 @@
 # To Do
 * add username on request calls to compare against jwt
 * reflect errors on UI for login and register page
+* chat page styling 
+    - long messages in input
+    - sizing
+    - background
+    - scrolling while streaming
 * login handling
 * logout handling
 * router authentication

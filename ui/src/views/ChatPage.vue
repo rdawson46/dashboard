@@ -13,8 +13,15 @@ import Chat from '@/components/Chat.vue'
 <style scoped>
 #app-container {
   display: flex;
-  height: 100vh;
-  background-color: #1e1e1e;
-  width: 100vw;
+  max-height: 100vh;
+  max-width: 100vw;
+  background: linear-gradient(
+      135deg,
+      rgba(24, 42, 60, 0.6),
+      rgba(24, 42, 60, 0.3),
+      rgba(24, 42, 60, 0),
+      rgba(24, 42, 60, 0.3),
+      rgba(24, 42, 60, 0.6)
+  );
 }
 </style>

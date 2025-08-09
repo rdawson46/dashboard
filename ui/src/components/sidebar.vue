@@ -14,7 +14,7 @@ function notify(message) {
 
 async function getHistory() {
   try{
-    const res = await fetch('/api/chatDescription');
+    const res = await fetch('/api/chatDescription', { credentials: 'include' });
     const data = await res.json();
     return data;
   } catch (e) {
@@ -90,7 +90,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 100%;
+  height: 100vh;
 }
 
 .nav-item {

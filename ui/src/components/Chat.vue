@@ -121,7 +121,8 @@ async function stream(url, body) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      credentials: 'include'
     });
 
     if (!response.ok) {
@@ -213,7 +214,7 @@ async function query() {
 
 async function getModelList() {
     try {
-        const response = await fetch('/api/modelList')
+        const response = await fetch('/api/modelList', { credentials: 'include' })
 
         if (!response.ok) {
           notify(`Error: ${response.status} ${response.statusText}`);
@@ -298,8 +299,8 @@ onMounted(async () => {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  height: 100% - 40px;
-  padding: 20px;
+  height: calc(100vh - 40px);
+  padding-top: 20px;
   margin-left: 16rem;
   transition: margin-left 200ms ease;
   align-items: center;

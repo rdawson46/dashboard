@@ -135,5 +135,24 @@ func (r *sqliteRepo) UpdateUser() () {}
 
 
 func (r *sqliteRepo) SignInUser(ctx context.Context, username, enteredPassword string) (*User_db, error) {
-	return nil, nil
+	query := `SELECT * FROM users WHERE username = ?`
+    row := r.db.QueryRowContext(ctx, query, username)
+
+    var user User_db
+	var hashedPass string
+    err := row.Scan(&user.ID, &user.Name, &user.CreatedAt, &hashedPass)
+    if err != nil {
+        if errors.Is(err, sql.ErrNoRows) {
+            return nil, ErrUserNotFound
+        } 
+        return nil, fmt.Errorf("failed to scan user: %w", err)
+    }
+
+	err = bcrypt.CompareHashAndPassword([]byte(hashedPass), []byte(enteredPassword))
+
+	if err != nil {
+		return nil, fmt.Errorf("Incorrect Password")
+	}
+
+	return &user, nil
 }

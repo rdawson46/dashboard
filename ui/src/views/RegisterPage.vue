@@ -1,6 +1,13 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { RouterLink } from 'vue-router';
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+
+import { router } from '@/router'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
 
 const username = ref('');
 const password = ref('');
@@ -8,12 +15,14 @@ const confirmPassword = ref('');
 const passwordFieldType = ref('password');
 const passwordTouched = ref(false);
 
+
 const rules = ref({
   length: false,
   uppercase: false,
   special: false,
   number: false
 });
+
 
 const validatePassword = () => {
   passwordTouched.value = true;
@@ -23,17 +32,29 @@ const validatePassword = () => {
   rules.value.special = /[!@#$%^&*(),.?":{}|<>]/.test(password.value);
 };
 
+
 const passwordsMismatch = computed(() => {
   return password.value && confirmPassword.value && password.value !== confirmPassword.value;
 });
+
 
 const passwordFieldIcon = computed(() => {
   return passwordFieldType.value === 'password' ? 'fa-eye' : 'fa-eye-slash';
 });
 
+
 const togglePasswordVisibility = () => {
   passwordFieldType.value = passwordFieldType.value === 'password' ? 'text' : 'password';
 };
+
+
+function notify(message) {
+    toast(message, {
+        autoClose: 1000,
+        theme: 'dark',
+    });
+}
+
 
 const register = async () => {
   if (passwordsMismatch.value) {
@@ -44,8 +65,34 @@ const register = async () => {
     alert("Password does not meet the requirements.");
     return;
   }
-  // Handle registration logic here
-  alert(`Registering with username: ${username.value}`);
+
+  try {
+    const formData = new FormData();
+    formData.append('username', username.value)
+    formData.append('password', password.value)
+    formData.append('confirm', confirmPassword.value)
+
+    const res = await fetch('/api/register', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      }
+    )
+
+    // TODO: finish this
+    if (!res.ok) {
+      notify(`Error occured`)
+      return
+    }
+
+    const data = await res.json()
+    authStore.setUser(data.user)
+    router.push('/chat')
+
+  } catch (e) {
+    notify(`Error occured`)
+    console.error(e)
+  }
 };
 </script>
 
@@ -69,9 +116,9 @@ const register = async () => {
         </div>
         <div class="password-rules">
           <p :class="{ 'valid': rules.length && passwordTouched, 'invalid': !rules.length && passwordTouched, 'untouched': !passwordTouched }">8 characters minimum</p>
-          <p :class="{ 'valid': rules.number && passwordTouched, 'invalid': !rules.length && passwordTouched, 'untouched': !passwordTouched }">One digit</p>
-          <p :class="{ 'valid': rules.uppercase && passwordTouched, 'invalid': !rules.length && passwordTouched, 'untouched': !passwordTouched  }">One uppercase letter</p>
-          <p :class="{ 'valid': rules.special && passwordTouched, 'invalid': !rules.length && passwordTouched, 'untouched': !passwordTouched  }">One special character</p>
+          <p :class="{ 'valid': rules.number && passwordTouched, 'invalid': !rules.number && passwordTouched, 'untouched': !passwordTouched }">One digit</p>
+          <p :class="{ 'valid': rules.uppercase && passwordTouched, 'invalid': !rules.uppercase && passwordTouched, 'untouched': !passwordTouched  }">One uppercase letter</p>
+          <p :class="{ 'valid': rules.special && passwordTouched, 'invalid': !rules.special && passwordTouched, 'untouched': !passwordTouched  }">One special character</p>
         </div>
         <p v-if="passwordsMismatch && passwordTouched" class="error-message">Passwords do not match.</p>
         <button type="submit" class="register-button">Register</button>
@@ -171,9 +218,11 @@ const register = async () => {
   text-align: left;
   font-size: 0.8rem;
   margin-bottom: 1rem;
-  color: #cccccc;
 }
 
+.password-rules p.untouched {
+  color: #cccccc;
+}
 .password-rules p.invalid {
   color: #ff6b6b;
 }

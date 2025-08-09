@@ -5,17 +5,33 @@ import RegisterPage from '../views/RegisterPage.vue'
 import ChatPage from '../views/ChatPage.vue'
 import NotFoundPage from '../views/NotFoundPage.vue'
 
+import { useAuthStore } from '@/stores/auth';
+
 const routes = [
     { path: '/', component: LandingPage },
     { path: '/login', component: LoginPage },
     { path: '/register', component: RegisterPage },
-    { path: '/chat', component: ChatPage },
+    {
+        path: '/chat',
+        component: ChatPage,
+        meta: { requiresAuth: true }
+    },
     { path: '/:pathMatch(.*)*', component: NotFoundPage }
 ]
 
-const router = createRouter({
+export const router = createRouter({
     history: createWebHistory(),
     routes
 })
 
-export default router
+router.beforeEach(async (to) => {
+    const authStore = useAuthStore()
+
+    if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+        await authStore.fetchUser()
+
+        if (!authStore.isAuthenticated) {
+            return { path: '/login' }
+        }
+    }
+})

@@ -11,6 +11,7 @@ type Repository interface {
     GetUserCount(ctx context.Context) (int64, error)
 
     CreateUser(ctx context.Context, username, password string) (*User_db, error)
+    SignInUser(ctx context.Context, username, password string) (*User_db, error)
     UpdateUser() ()
 
 

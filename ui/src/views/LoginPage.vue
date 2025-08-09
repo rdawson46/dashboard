@@ -1,22 +1,64 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { RouterLink } from 'vue-router';
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+
+import { router } from '@/router'
+import { useAuthStore } from '@/stores/auth'
 
 const username = ref('');
 const password = ref('');
 const passwordFieldType = ref('password');
-const passwordTouched = ref(false);
+
+const authStore = useAuthStore()
 
 const passwordFieldIcon = computed(() => {
   return passwordFieldType.value === 'password' ? 'fa-eye' : 'fa-eye-slash';
 });
 
+
+function notify(message) {
+    toast(message, {
+        autoClose: 1000,
+        theme: 'dark',
+    });
+}
+
 const togglePasswordVisibility = () => {
   passwordFieldType.value = passwordFieldType.value === 'password' ? 'text' : 'password';
 };
 
-const login = () => {
-  alert(`Logging in with username: ${username.value}`);
+
+const login = async () => {
+  if (!username.value.length && !password.value.length) return
+
+  try {
+    const formData = new FormData();
+    formData.append('username', username.value)
+    formData.append('password', password.value)
+
+    const res = await fetch('/api/login', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      }
+    )
+
+    if (!res.ok) {
+      notify("Error occured while logging in")
+      console.log(res)
+      return
+    }
+
+    const data = await res.json()
+    authStore.setUser(data.user)
+    router.push('/chat')
+  } catch (e) {
+    notify("An error has occured while logging in")
+    console.log(e)
+    return
+  }
 };
 </script>
 

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"time"
+	"strings"
 
 	ollama "github.com/ollama/ollama/api"
 	"github.com/charmbracelet/log"
@@ -28,7 +28,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    healthCheck(w, r)
+	http.Redirect(w, r, "/health", http.StatusFound)
 }
 
 func healthCheck(w http.ResponseWriter, r *http.Request) {
@@ -296,125 +296,171 @@ func chatDescriptionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func loginHandler(jwtManager *JWTManager) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        if r.Method != http.MethodPost {
-            http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-            return
-        }
+func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 
-        var loginReq struct {
-            Username string `json:"username"`
-            Password string `json:"password"`
-        }
+	username := strings.TrimSpace(r.FormValue("username"))
+	password := strings.TrimSpace(r.FormValue("password"))
 
-        if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
-            http.Error(w, "Invalid JSON", http.StatusBadRequest)
-            return
-        }
+	if username == "" || password == "" {
+		http.Error(w, "Improper values", http.StatusUnauthorized)
+		s.logger.Error(
+			"User registration failed: field left blank",
+			"path", r.URL.Path,
+		)
+		return
+	}
 
-        // TODO: add db logic
-        if loginReq.Username == "admin" && loginReq.Password == "password" {
-            user := &User{
-                Username: "admin", 
-                ID: 1,
-            }
+	ctx := r.Context()
+	user_db, err := s.db.SignInUser(ctx, username, password)
 
-            token, err := jwtManager.GenerateToken(user)
-            if err != nil {
-                http.Error(w, "Failed to generate token", http.StatusInternalServerError)
-                return
-            }
+	if err != nil {
+		http.Error(w, "Couldn't login", http.StatusUnauthorized)
+		s.logger.Error(
+			"User registration failed: field left blank",
+			"path", r.URL.Path,
+		)
+		return
+	}
 
-            jwtManager.SetTokenCookie(w, token)
-            w.WriteHeader(http.StatusOK)
-        } else {
-            http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-        }
-    }
+	// TODO: make and set token in jwt
+	var user User
+
+	user.Username = user_db.Name
+	user.ID = int(user_db.ID)
+
+	token, err := s.jwt_manager.GenerateToken(&user)
+
+	if err != nil {
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		s.logger.Errorf(
+			"Failed to generate user token",
+			"path", r.URL.Path,
+		)
+		return
+	}
+
+	s.jwt_manager.SetTokenCookie(w, token)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(user)
 }
 
-func logoutHandler(jwtManager *JWTManager) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        jwtManager.ClearTokenCookie(w)
-        w.WriteHeader(http.StatusOK)
-        json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
-    }
+func (s *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
+	s.jwt_manager.ClearTokenCookie(w)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
 }
 
 // TODO: modify for cookies and figure where to trigger
-func refreshHandler(jwtManager *JWTManager) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        token, err := jwtManager.GetTokenFromCookie(r)
+func (s *Server) refreshHandler(w http.ResponseWriter, r *http.Request) {
+	token, err := s.jwt_manager.GetTokenFromCookie(r)
 
-        if err != nil {
-            if err == http.ErrNoCookie {
-                http.Error(w, "Unauthorized: No session cookie found", http.StatusUnauthorized)
-                return
-            }
-            http.Error(w, "Bad request", http.StatusUnauthorized)
-            return
-        }
+	if err != nil {
+		if err == http.ErrNoCookie {
+			http.Error(w, "Unauthorized: No session cookie found", http.StatusUnauthorized)
+			return
+		}
+		http.Error(w, "Bad request", http.StatusUnauthorized)
+		return
+	}
 
-        newToken, err := jwtManager.RefreshToken(token)
+	newToken, err := s.jwt_manager.RefreshToken(token)
 
-        if err != nil {
-            http.Error(w, "Failed to refresh token: "+err.Error(), http.StatusUnauthorized)
-            return
-        }
+	if err != nil {
+		http.Error(w, "Failed to refresh token: "+err.Error(), http.StatusUnauthorized)
+		return
+	}
 
-        jwtManager.SetTokenCookie(w, newToken)
-        w.WriteHeader(http.StatusOK)
-    }
+	s.jwt_manager.SetTokenCookie(w, newToken)
+	w.WriteHeader(http.StatusOK)
 }
 
-/*
-func protectedHandler(w http.ResponseWriter, r *http.Request) {
-    user, ok := userFromContext(r.Context())
+func (s *Server) verifyHandler(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r.Context())
 
-    if !ok {
-        http.Error(w, "User not found in context", http.StatusInternalServerError)
-        return
-    }
-
-    response := map[string]any {
-        "message": "this is a protected endopoint",
-        "user": user,
-    }
+	if !ok {
+		http.Error(w, "Invalid user", http.StatusUnauthorized)
+		return
+	}
 
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(response)
-}
-*/
+	w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(user)
+} 
 
 // =======================================
 
-/*
-TODO: 
+func (s *Server) register(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid Method", http.StatusMethodNotAllowed)
+		return
+	}
 
-3. better logging ...
+	username := strings.TrimSpace(r.FormValue("username"))
+	password := strings.TrimSpace(r.FormValue("password"))
+	confirm := strings.TrimSpace(r.FormValue("confirm"))
 
-* better logging
-* set up a generic UI for testing 
-    * send file and then routing through Vue
-    * or through html (not sold on Vue routing)
-* create the dashboard routing
-* set up the db
-* create db methods
-* api auth handler
+	if username == "" || password == "" || confirm == "" {
+		http.Error(w, "Improper values", http.StatusUnauthorized)
+		s.logger.Error(
+			"User registration failed: field left blank",
+			"path", r.URL.Path,
+		)
+		return
+	}
 
-*/
+	if password != confirm {
+		http.Error(w, "password and confirmation do not match", http.StatusUnauthorized)
+		s.logger.Errorf(
+			"User registration failed: password != confirmation",
+			"path", r.URL.Path,
+		)
+		return
+	}
 
-// for returning the login page
-func loginPageHandler(w http.ResponseWriter, r *http.Request) {}
+	s.logger.Info("User information pulled",
+		"path", r.URL.Path,
+	)
 
-// WARN: requires the db to be set up
-// and better user struct
-func register(w http.ResponseWriter, r *http.Request) {}
+	db_user, err := s.db.CreateUser(r.Context(), username, password)
 
+	if err != nil {
+		http.Error(w, "Failed to create user", http.StatusUnauthorized)
+		s.logger.Errorf(
+			"User registration failed: Failed to create in db",
+			err.Error(),
+			"path", r.URL.Path,
+		)
+		return
+	}
 
-// FIX: will have to think about what this does and how to handle
-func dashboard(w http.ResponseWriter, r *http.Request) {}
+	user := &User{} // username and ID
+	user.Username = db_user.Name
+	user.ID = int(db_user.ID)
+
+	token, err := s.jwt_manager.GenerateToken(user)
+
+	if err != nil {
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		s.logger.Errorf(
+			"Failed to generate user token",
+			"path", r.URL.Path,
+		)
+		return
+	}
+
+	s.jwt_manager.SetTokenCookie(w, token)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(user)
+}
+
 
 // =======================================
 
@@ -424,40 +470,33 @@ func dashboard(w http.ResponseWriter, r *http.Request) {}
 // TODO: set up and api handler
 
 func addRoutes(h *http.ServeMux, s *Server) {
-    jwt_manager := NewJWTManager(
-        "test_key",
-        time.Minute*10,
-    )
-
     // basic routes
     h.HandleFunc("/", index)
     h.HandleFunc("/health", healthCheck)
 
     // user status routes
 	// TODO: will have to set up as an api and requires DB
-    h.HandleFunc("/login", loginHandler(jwt_manager))
-    h.HandleFunc("/logout", logoutHandler(jwt_manager))
-    h.HandleFunc("/reresh", refreshHandler(jwt_manager))
-    // TODO:
-    h.HandleFunc("/register", register)
+    h.HandleFunc("/api/login", s.loginHandler)
+    h.HandleFunc("/api/logout", s.logoutHandler)
+    h.HandleFunc("/api/reresh", s.refreshHandler)
 
-
-    // application routes
-    h.HandleFunc("/dashboard", jwt_manager.AuthMiddleware(
-        s.rateLimitMiddleware(dashboard),
-    ))
+    // TODO: add user to db
+    h.HandleFunc("/api/register", s.register)
 
     // api auth handler
-    h.HandleFunc("/api/chat", jwt_manager.AuthApiMiddleware(
+    h.HandleFunc("/api/chat", s.jwt_manager.AuthApiMiddleware(
         s.rateLimitMiddleware(chatHandler),
     ))
 
-    // HACK: need to add auth around this
+    // HACK: need to add auth around these and limitMiddleware
+	// TODO: add to (s *Server) for logging
     h.HandleFunc("/api/stream", streamHandler(s.logger))
     h.HandleFunc("/api/modelList", modelListHandler)
     h.HandleFunc("/api/modelInfo", modelShowHandler)
 
 	h.HandleFunc("/api/chatDescription", chatDescriptionHandler)
+
+	h.HandleFunc("/api/me", s.jwt_manager.AuthApiMiddleware(s.verifyHandler))
 }
 
 // =======================================

@@ -30,17 +30,23 @@ func NewConfig(port, rateLimitBurst int, rateLimitReq float64, shutdownTimeout t
 }
 
 type Server struct {
-    config ServerConfig
-    httpServer *http.Server
+    config      ServerConfig
+    httpServer  *http.Server
     rateLimiter *rate.Limiter
-    logger *log.Logger
-	db db.Repository
+    logger 		*log.Logger
+	db          db.Repository
+	jwt_manager *JWTManager
 }
 
 func NewServer(config ServerConfig, db db.Repository) *Server {
     logger := log.NewWithOptions(os.Stderr, log.Options{
         ReportCaller: true,
     })
+
+    jwt_manager := NewJWTManager(
+        "test_key",
+        time.Minute*10,
+    )
 
     return &Server{
         config: config,
@@ -50,6 +56,7 @@ func NewServer(config ServerConfig, db db.Repository) *Server {
             rate.Limit(config.RateLimitReq),
             config.RateLimitBurst,
         ),
+		jwt_manager: jwt_manager,
     }
 }
 

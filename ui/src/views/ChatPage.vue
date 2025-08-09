@@ -1,6 +1,6 @@
 <script setup>
-import Sidebar from '../components/sidebar.vue'
-import Chat from '../components/Chat.vue'
+import Sidebar from '@/components/sidebar.vue'
+import Chat from '@/components/Chat.vue'
 </script>
 
 <template>

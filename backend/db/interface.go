@@ -2,6 +2,7 @@ package db
 
 import (
     "context"
+	ollama "github.com/ollama/ollama/api"
 )
 
 type Repository interface {
@@ -16,14 +17,15 @@ type Repository interface {
 
 
     // Messages
-    GetMessage() ()
+    GetMessage(ctx context.Context, id int64) ([]ollama.Message, error)
     GetMessages() ()
     GetMessageCount() ()
 
-    CreateMessage() ()
+    CreateMessage(ctx context.Context, userId int64, message []ollama.Message) (int64, error)
     UpdateMessage() ()
+	AddMessage(ctx context.Context, messageId, userId int64, message []ollama.Message) (bool, error)
 
-    GetDescriptions() ()
+    GetDescriptions(ctx context.Context, userId int64, limit, offset int) (Descriptions, error)
 	Close() error
 }
 

@@ -264,28 +264,64 @@ func modelShowHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // TODO: have to get the user ID from content, requires DB setup
-func chatDescriptionHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) chatDescriptionHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
 		return
 	}
 
-    type chatDesc struct {
-        Description string `json:"description"`
-    }
+	ctx := r.Context()
+
+	user, ok := userFromContext(ctx)
+
+	if !ok {
+		s.logger.Error(
+			"User not in context",
+			"path", r.URL.Path,
+		)
+		http.Error(w, "Invalid user", http.StatusUnauthorized)
+		return
+	}
+
 
 	// TEMP: placeholder until db is set up
-	history := []chatDesc{
+	s.logger.Infof(
+		"Pulling history for user: %d, username: %s", user.ID, user.Username,
+	)
+
+	history, err := s.db.GetDescriptions(ctx, user.ID, 10, 0)
+
+	if err != nil {
+		s.logger.Error(
+			err.Error(),
+			"path", r.URL.Path,
+		)
+
+		http.Error(w, "Unable to get chat history", http.StatusInternalServerError)
+		return
+	}
+
+	s.logger.Infof(
+		"History pulled of len: %d", len(history),
+		"path", r.URL.Path,
+	)
+
+	/*
+	history := []db.ChatDesc{
 		{
 			Description: "questions",
+			Id: 1,
 		},
 		{
 			Description: "answers",
+			Id: 2,
 		},
 		{
 			Description: "coding",
+			Id: 3,
 		},
 	}
+	*/
 
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
@@ -324,10 +360,10 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: make and set token in jwt
-	var user User
+	var user User_jwt
 
 	user.Username = user_db.Name
-	user.ID = int(user_db.ID)
+	user.ID = user_db.ID
 
 	token, err := s.jwt_manager.GenerateToken(&user)
 
@@ -436,9 +472,9 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := &User{} // username and ID
+	user := &User_jwt{} // username and ID
 	user.Username = db_user.Name
-	user.ID = int(db_user.ID)
+	user.ID = db_user.ID
 
 	token, err := s.jwt_manager.GenerateToken(user)
 
@@ -489,7 +525,7 @@ func addRoutes(h *http.ServeMux, s *Server) {
     h.HandleFunc("/api/modelList", s.jwt_manager.AuthApiMiddleware(modelListHandler))
     h.HandleFunc("/api/modelInfo", s.jwt_manager.AuthApiMiddleware(modelShowHandler))
 
-	h.HandleFunc("/api/chatDescription", chatDescriptionHandler)
+	h.HandleFunc("/api/chatDescription", s.jwt_manager.AuthApiMiddleware(s.chatDescriptionHandler))
 
 	h.HandleFunc("/api/me", s.jwt_manager.AuthApiMiddleware(s.verifyHandler))
 }

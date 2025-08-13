@@ -55,7 +55,7 @@ func (r *sqliteRepo) GetUsers(ctx context.Context, limit, offset int64) ([]*User
     rows, err := r.db.QueryContext(ctx, query, limit, offset)
 
     if err != nil {
-        return nil, fmt.Errorf("failed to query users: %w", err)
+        return nil, err
     }
     defer rows.Close()
 

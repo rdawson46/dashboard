@@ -16,6 +16,7 @@ async function getHistory() {
   try{
     const res = await fetch('/api/chatDescription', { credentials: 'include' });
     const data = await res.json();
+    console.log(data)
     return data;
   } catch (e) {
     notify(`Can't get chat history`)

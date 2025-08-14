@@ -237,6 +237,7 @@ onMounted(async () => {
       </template>
     </div>
 
+    <!--
     <div class="chat-input-area">
       <div class="input-wrapper glass-card">
         <textarea
@@ -262,6 +263,40 @@ onMounted(async () => {
         </button>
       </div>
     </div>
+    -->
+    <div class="input-area-main" :class="{ 'middle': !chatMessages.length }">
+
+
+      <div class="input-area-sub">
+        <div
+          ref="inputContainer"
+          id="message-input"
+          placeholder="Type your message..."
+          contenteditable="true"
+          @input="handleInput"
+          @keydown.down.exact.prevent="navigateHistoryDown()"
+          @keydown.up.exact.prevent="navigateHistoryUp()"
+          @keydown.enter.exact.prevent="query"
+        ></div>
+      </div>
+
+
+      <div class="input-area-buttons">
+        <button @click='searchActive = !searchActive' :class="{ active: searchActive }">
+          <i class="fa-solid fa-globe"></i>
+          <span>Web Search</span>
+        </button>
+        <button @click='codeActive = !codeActive' :class="{ active: codeActive }">
+          <i class="fa-solid fa-code"></i>
+          <span>Code</span>
+        </button>
+        <button id="send-btn" @click="query"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+
+
+    </div>
+
+
   </div>
 </template>
 
@@ -384,15 +419,14 @@ onMounted(async () => {
   border-radius: 16px;
 }
 
+/*
 #message-input {
   flex-grow: 1;
-  background: transparent;
   border: none;
   color: var(--text-color);
   font-size: 1rem;
   padding: 1rem;
   resize: none;
-  height: 50px;
 }
 
 #message-input:focus {
@@ -418,7 +452,6 @@ onMounted(async () => {
 .input-options {
   display: flex;
   gap: 1rem;
-  margin-top: 1rem;
 }
 
 .input-options button {
@@ -439,6 +472,74 @@ onMounted(async () => {
   color: white;
   border-color: var(--primary-color);
 }
+*/
+
+.input-area-main {
+    align-items: left;
+    background-color: #2d2d2d;
+    border-radius: 25px;
+    padding: 5px 15px;
+    width: 60%;
+    transition: 500ms ease-out;
+    margin: auto;
+}
+
+input-area-sub {
+    display: flex;
+    align-items: center;
+}
+
+.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.input-area-buttons {
+    width: 100%;
+    display: flex;
+}
+
+.input-area-buttons button:last-child {
+    margin-left: auto;
+}
+
+.input-area-buttons > button:hover {
+    background-color: var(--bg-color-light);
+}
+
+#message-input {
+    flex-grow: 1;
+    padding: 5px 5px 0 5px;
+    border: none;
+    resize: none;
+    font-family: 'Sqgoe UI', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 1rem;
+    line-height: 1.5;
+    max-height: 200px;
+    min-height: 40px;
+    color: #f0f0f0;
+    background-color: transparent;
+    text-align: left;
+}
+
+#message-input:focus {
+    outline: none;
+}
+
+#send-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 10px;
+    transition: color 0.2s ease;
+}
+
+#send-btn:hover {
+    color: #81b2f3;
+}
+
 </style>
 
 <style>

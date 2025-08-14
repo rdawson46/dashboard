@@ -16,7 +16,6 @@ async function getHistory() {
   try{
     const res = await fetch('/api/chatDescription', { credentials: 'include' });
     const data = await res.json();
-    console.log(data)
     return data;
   } catch (e) {
     notify(`Can't get chat history`)
@@ -35,150 +34,127 @@ onMounted(async () => {
 </script>
 
 <template>
-  <nav class="navbar">
-    <ul class="navbar-nav">
-      <li class="logo">
-        <div class="nav-link">
-          <span class="link-text logo-text">Chat</span>
-          <i class="fa-solid fa-angles-right fa-2xl"></i>
-        </div>
-      </li>
-      <li class="nav-item">
-        <div class="nav-link">
-          <span class="link-text">Profile</span>
-        </div>
-      </li>
-      <li class="nav-item">
-        <div class="nav-link">
-          <span class="link-text"><a href="/models">Model</a></span>
-        </div>
-      </li>
-
-      <li class="nav-item">
-        <div class="nav-link">
-          <span class="link-text">Chats</span>
-        </div>
-
-      </li>
-      <ul class="desc-list">
-
-        <!-- TODO: make this not bad and add a delete button -->
-        <!-- TODO: and paginate this api -->
-        <template v-for="h in history">
-          <li class="description">
-            {{h.description}}
-          </li>
-        </template>
-
-      </ul>
+  <nav class="sidebar glass-card">
+    <div class="logo">
+      <i class="fa-solid fa-robot"></i>
+      <h1>Chat</h1>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#" class="active"><i class="fa-solid fa-comments"></i><span>Chat</span></a></li>
+      <li><a href="#"><i class="fa-solid fa-user"></i><span>Profile</span></a></li>
+      <li><a href="/models"><i class="fa-solid fa-cogs"></i><span>Models</span></a></li>
     </ul>
+    <div class="history">
+      <h3>History</h3>
+      <ul>
+        <li v-for="h in history" :key="h.id">{{ h.description }}</li>
+      </ul>
+    </div>
+    <div class="logout">
+        <a href="/api/logout">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Logout</span>
+        </a>
+    </div>
   </nav>
 </template>
 
 <style scoped>
-.navbar {
-  position: fixed;
-  background-color: #2c3e50;
-  transition: width 200ms ease;
-  z-index: 1000;
-  width: 16rem;
-}
-
-.navbar-nav {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.sidebar {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  height: 100vh;
-}
-
-.nav-item {
-  width: 100%;
-}
-
-.nav-link {
-  display: flex;
-  align-items: center;
-  height: 5rem;
-  color: #bdc3c7;
-  text-decoration: none;
-  filter: grayscale(100%) opacity(0.7);
-  transition: all 200ms ease;
-}
-
-.nav-link:hover {
-  filter: grayscale(0%) opacity(1);
-  background: #34495e;
-  color: #ecf0f1;
-}
-
-.link-text {
-  margin-left: 1rem;
-  white-space: nowrap;
-  font-size: 1.2rem;
-}
-
-.nav-link i {
-  min-width: 2rem;
-  margin: 0 1.5rem;
-  transition: 200ms ease;
+  width: 280px;
+  padding: 2rem;
 }
 
 .logo {
-  font-weight: bold;
-  text-transform: uppercase;
-  margin-bottom: 1rem;
-  text-align: center;
-  color: #ecf0f1;
-  background: #1a252f;
-  font-size: 1.5rem;
-  letter-spacing: 0.3ch;
-  width: 100%;
+  display: flex;
+  align-items: center;
+  margin-bottom: 3rem;
 }
 
 .logo i {
-  transform: rotate(-180deg);
-  transition: transform 200ms ease;
+  font-size: 2rem;
+  color: var(--primary-color);
+  margin-right: 1rem;
 }
 
-.navbar:hover .logo i {
-  transform: rotate(0);
+.logo h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
 }
 
-@media only screen and (min-width: 600px) {
-  .navbar {
-    top: 0;
-    height: 100vh;
-  }
-
-  .navbar:hover .link-text {
-    display: inline;
-  }
+.nav-links {
+  list-style: none;
+  margin-bottom: 3rem;
 }
 
-@media only screen and (max-width: 600px) {
-  .navbar {
-    bottom: 0;
-    width: 100vw;
-    height: 5rem;
-  }
-
-  .logo {
-    display: none;
-  }
-
-  .navbar-nav {
-    flex-direction: row;
-  }
-
-  .nav-link {
-    justify-content: center;
-  }
-
-  main {
-    margin: 0;
-  }
+.nav-links li a {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+.nav-links li a:hover, .nav-links li a.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.nav-links li a i {
+  margin-right: 1rem;
+  font-size: 1.2rem;
+}
+
+.history {
+  flex-grow: 1;
+}
+
+.history h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.history ul {
+  list-style: none;
+}
+
+.history ul li {
+  padding: 0.5rem 0;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.history ul li:hover {
+  opacity: 1;
+}
+
+.logout a {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.logout a:hover {
+    background-color: #ef4444;
+    color: white;
+}
+
+.logout a i {
+    margin-right: 1rem;
+}
+
 </style>

@@ -58,11 +58,11 @@ function notify(message) {
 
 const register = async () => {
   if (passwordsMismatch.value) {
-    alert("Passwords do not match!");
+    notify("Passwords do not match!");
     return;
   }
   if (!rules.value.length || !rules.value.uppercase || !rules.value.special || !rules.value.number) {
-    alert("Password does not meet the requirements.");
+    notify("Password does not meet the requirements.");
     return;
   }
 
@@ -79,7 +79,6 @@ const register = async () => {
       }
     )
 
-    // TODO: finish this
     if (!res.ok) {
       notify(`Error occured`)
       return
@@ -97,28 +96,25 @@ const register = async () => {
 </script>
 
 <template>
-  <div class="register-container">
-    <div class="register-box">
-      <h1 class="title">Register</h1>
+  <div class="register-page">
+    <div class="glass-card register-box">
+      <h1 class="title">Create Account</h1>
       <form @submit.prevent="register">
         <div class="input-group">
-          <label for="username">Username</label>
-          <input type="text" id="username" v-model="username" required>
+          <input type="text" id="username" v-model="username" placeholder="Username" required>
         </div>
         <div class="input-group">
-          <label for="password">Password</label>
-          <input :type="passwordFieldType" id="password" v-model="password" @input="validatePassword" required>
+          <input :type="passwordFieldType" id="password" v-model="password" @input="validatePassword" placeholder="Password" required>
           <i :class="['fa-solid', passwordFieldIcon, 'password-toggle']" @click="togglePasswordVisibility"></i>
         </div>
         <div class="input-group">
-          <label for="confirm-password">Confirm Password</label>
-          <input :type="passwordFieldType" id="confirm-password" v-model="confirmPassword" required>
+          <input :type="passwordFieldType" id="confirm-password" v-model="confirmPassword" placeholder="Confirm Password" required>
         </div>
-        <div class="password-rules">
-          <p :class="{ 'valid': rules.length && passwordTouched, 'invalid': !rules.length && passwordTouched, 'untouched': !passwordTouched }">8 characters minimum</p>
-          <p :class="{ 'valid': rules.number && passwordTouched, 'invalid': !rules.number && passwordTouched, 'untouched': !passwordTouched }">One digit</p>
-          <p :class="{ 'valid': rules.uppercase && passwordTouched, 'invalid': !rules.uppercase && passwordTouched, 'untouched': !passwordTouched  }">One uppercase letter</p>
-          <p :class="{ 'valid': rules.special && passwordTouched, 'invalid': !rules.special && passwordTouched, 'untouched': !passwordTouched  }">One special character</p>
+        <div class="password-rules" v-if="passwordTouched">
+          <p :class="{ 'valid': rules.length }">8 characters minimum</p>
+          <p :class="{ 'valid': rules.number }">One digit</p>
+          <p :class="{ 'valid': rules.uppercase }">One uppercase letter</p>
+          <p :class="{ 'valid': rules.special }">One special character</p>
         </div>
         <p v-if="passwordsMismatch && passwordTouched" class="error-message">Passwords do not match.</p>
         <button type="submit" class="register-button">Register</button>
@@ -129,139 +125,88 @@ const register = async () => {
 </template>
 
 <style scoped>
-.register-container {
+.register-page {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100vh;
-  width: 100vw;
-  background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #1a2980);
-  color: white;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.register-container::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    backdrop-filter: blur(5px);
+  width: 100%;
 }
 
 .register-box {
-  background: rgba(0, 0, 0, 0.3);
-  padding: 2.5rem;
-  border-radius: 15px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
   width: 100%;
-  max-width: 400px;
+  max-width: 450px;
   text-align: center;
-  animation: fade-in 0.5s ease-out forwards;
-  z-index: 10;
-}
-
-@keyframes fade-in {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  padding: 3rem;
 }
 
 .title {
-  font-size: 2rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: var(--text-color);
 }
 
 .input-group {
   position: relative;
   margin-bottom: 1.5rem;
-  text-align: left;
-}
-
-.input-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
-  opacity: 0.8;
-}
-
-.input-group input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: white;
-  font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  box-sizing: border-box; /* Added to fix width issue */
-}
-
-.input-group input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
 
 .password-toggle {
   position: absolute;
-  top: 70%;
+  top: 50%;
   right: 1rem;
   transform: translateY(-50%);
   cursor: pointer;
-  opacity: 0.6;
+  color: var(--text-color);
+  opacity: 0.7;
 }
 
 .password-rules {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
   text-align: left;
   font-size: 0.8rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-color);
+  opacity: 0.8;
 }
 
-.password-rules p.untouched {
-  color: #cccccc;
-}
-.password-rules p.invalid {
-  color: #ff6b6b;
+.password-rules p {
+  transition: color 0.3s ease;
 }
 
 .password-rules p.valid {
-  color: #63e6be;
+  color: var(--secondary-color);
+  text-shadow: 0 0 5px var(--secondary-color);
 }
 
 .error-message {
-  color: #ff6b6b;
+  color: #ef4444;
   font-size: 0.9rem;
   margin-bottom: 1rem;
 }
 
 .register-button {
   width: 100%;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 8px;
-  background-color: #007bff;
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.register-button:hover {
-  background-color: #0056b3;
+  margin-top: 1rem;
 }
 
 .login-link {
-  margin-top: 1.5rem;
+  margin-top: 2rem;
   font-size: 0.9rem;
+  color: var(--text-color);
+  opacity: 0.8;
 }
 
 .login-link a {
-  color: #007bff;
+  color: var(--primary-color);
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 500;
+}
+
+.login-link a:hover {
+  text-decoration: underline;
 }
 </style>

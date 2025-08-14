@@ -209,7 +209,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="chat-container glass-card">
+  <div class="chat-container">
     <div class="chat-header">
       <h2>Chat</h2>
       <select name="model" id="modelSelector" ref="modelSelector">
@@ -271,6 +271,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 80%;
   padding: 2rem;
 }
 
@@ -441,19 +442,13 @@ onMounted(async () => {
 </style>
 
 <style>
-.message-content pre {
-  background-color: #1e293b !important;
-  padding: 1rem;
-  border-radius: 8px;
-  overflow-x: auto;
-}
 
 pre {
-  background-color: var(--primary-color);
-  padding: 6px;
-  border-radius: 13px;
+  background-color: #1e293b !important;
+  padding: 8px;
+  border-radius: 14px;
   overflow-x: auto;
-  margin-bottom: 0.5rem;
+  margin: 0.5rem;
 }
 
 code {

@@ -25,7 +25,7 @@ const modelList = ref([])
 const modelSelector = ref(null)
 
 const handleInput = (e) => {
-    inputValue.value = e.target.value;
+    inputValue.value = e.target.innerText;
     if (historyIndex.value !== -1) {
         historyIndex.value = -1;
         pristineInput = '';
@@ -57,6 +57,26 @@ function navigateHistoryDown() {
         inputValue.value = pristineInput;
     }
 }
+
+watch(inputValue, (newValue) => {
+    if (inputContainer.value && newValue !== inputContainer.value.innerText) {
+        inputContainer.value.innerText = newValue;
+        
+        nextTick(() => {
+            if (document.activeElement === inputContainer.value) {
+                const selection = window.getSelection();
+
+                if (selection) {
+                    const range = document.createRange();
+                    range.selectNodeContents(inputContainer.value);
+                    range.collapse(false)
+                    selection.removeAllRanges()
+                    selection.addRange(range)
+                }
+            }
+        });
+    }
+});
 
 const marked = new Marked(
   markedHighlight({
@@ -264,7 +284,7 @@ onMounted(async () => {
       </div>
     </div>
     -->
-    <div class="input-area-main" :class="{ 'middle': !chatMessages.length }">
+    <div class="input-area-main glass-card" :class="{ 'middle': !chatMessages.length }">
 
 
       <div class="input-area-sub">
@@ -307,7 +327,7 @@ onMounted(async () => {
   flex-direction: column;
   height: 100%;
   width: 80%;
-  padding: 2rem;
+  padding: 1rem 2rem 0 2rem;
 }
 
 .chat-header {
@@ -476,10 +496,10 @@ onMounted(async () => {
 
 .input-area-main {
     align-items: left;
-    background-color: #2d2d2d;
+    /*background-color: #2d2d2d;*/
     border-radius: 25px;
     padding: 5px 15px;
-    width: 60%;
+    width: 75%;
     transition: 500ms ease-out;
     margin: auto;
 }
@@ -496,6 +516,36 @@ input-area-sub {
 }
 
 .input-area-buttons {
+  display: flex;
+  gap: 1rem;
+  margin: 0.25rem 0;
+}
+
+.input-area-buttons button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-color-light);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.input-area-buttons button.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.input-area-buttons button:last-child {
+    margin-left: auto;
+}
+/*
+   buttons from og
+.input-area-buttons {
     width: 100%;
     display: flex;
 }
@@ -507,6 +557,7 @@ input-area-sub {
 .input-area-buttons > button:hover {
     background-color: var(--bg-color-light);
 }
+*/
 
 #message-input {
     flex-grow: 1;

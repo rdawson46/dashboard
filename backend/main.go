@@ -8,11 +8,21 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/rdawson46/dashboard/server"
+	"github.com/rdawson46/dashboard/db"
 )
 
+// TODO: need to run migrations on startup
 func run() error {
+	db, err := db.NewSqliteRepository()
+
+	if err != nil {
+		return err
+	}
+	
+	defer db.Close()
+
     config := server.NewConfig(8000, 300, 100, 100)
-    s := server.NewServer(config)
+    s := server.NewServer(config, db)
 
     if err := s.Start(); err != nil {
         log.Fatal(err)
@@ -30,6 +40,8 @@ func main() {
     if err != nil {
         log.Fatal("Error loading .env file:", err)
     }
+
+	server.InitialEnvCheck()
 
     if err := run(); err != nil {
         log.Fatal("Error running server:", err)

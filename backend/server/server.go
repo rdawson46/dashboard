@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"golang.org/x/time/rate"
+	db "github.com/rdawson46/dashboard/db"
 )
 
 type ServerConfig struct {
@@ -29,27 +30,50 @@ func NewConfig(port, rateLimitBurst int, rateLimitReq float64, shutdownTimeout t
 }
 
 type Server struct {
-    config ServerConfig
-    httpServer *http.Server
+    config      ServerConfig
+    httpServer  *http.Server
     rateLimiter *rate.Limiter
-    logger *log.Logger
+    logger 		*log.Logger
+	db          db.Repository
+	jwt_manager *JWTManager
 }
 
-func NewServer(config ServerConfig) *Server {
+func NewServer(config ServerConfig, db db.Repository) *Server {
     logger := log.NewWithOptions(os.Stderr, log.Options{
         ReportCaller: true,
-        ReportTimestamp: true,
-        TimeFormat: time.Kitchen,
     })
+
+    jwt_manager := NewJWTManager(
+        "test_key",
+        time.Minute*10,
+    )
 
     return &Server{
         config: config,
-        logger: logger,
+        logger: logger, 
+		db: db,
         rateLimiter: rate.NewLimiter(
             rate.Limit(config.RateLimitReq),
             config.RateLimitBurst,
         ),
+		jwt_manager: jwt_manager,
     }
+}
+
+func InitialEnvCheck() {
+	required_envs := []string{
+		"OLLAMA_URL",
+		"CODE_URL",
+		"DB_URL",
+	}
+
+	for _, env := range required_envs {
+		val := os.Getenv(env)
+		if val == "" {
+			fmt.Printf("Missing env: %s\n", env)
+			os.Exit(1)
+		}
+	}
 }
 
 
@@ -68,7 +92,7 @@ func (s *Server) rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
 func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         start := time.Now()
-        log.Info("Incoming request",
+        s.logger.Info("Incoming request",
             "method", r.Method,
             "path", r.URL.Path,
             "remote", r.RemoteAddr,
@@ -77,7 +101,7 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
         next.ServeHTTP(w, r)
 
         duration := time.Since(start)
-        log.Info("Request handled",
+        s.logger.Info("Request handled",
             "method", r.Method,
             "path", r.URL.Path,
             "duration", duration,
@@ -94,7 +118,8 @@ func (s *Server) Start() error {
     s.httpServer = &http.Server{
         Addr: fmt.Sprintf(":%d", s.config.Port),
         ReadTimeout: 5 * time.Second,
-        WriteTimeout: 10 * time.Second,
+        // disabled for longer responses
+        // WriteTimeout: 10 * time.Second,
     }
 
     mux := http.NewServeMux()

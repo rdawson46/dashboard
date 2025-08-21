@@ -1,35 +1,37 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import LandingPage from '../views/LandingPage.vue'
+import LoginPage from '../views/LoginPage.vue'
+import RegisterPage from '../views/RegisterPage.vue'
+import ChatPage from '../views/ChatPage.vue'
+import NotFoundPage from '../views/NotFoundPage.vue'
 
-// TODO: define the views
+import { useAuthStore } from '@/stores/auth';
+
 const routes = [
     { path: '/', component: LandingPage },
     { path: '/login', component: LoginPage },
     { path: '/register', component: RegisterPage },
-    { 
+    {
         path: '/chat',
         component: ChatPage,
         meta: { requiresAuth: true }
-    }
+    },
+    { path: '/:pathMatch(.*)*', component: NotFoundPage }
 ]
 
-const router = createRouter({
+export const router = createRouter({
     history: createWebHistory(),
     routes
 })
 
-router.beforeEach((to, from, next) => {
-    // TODO: swap this out later
-    const token = localStorage.get('token')
+router.beforeEach(async (to) => {
+    const authStore = useAuthStore()
 
-    if ((to.path === '/login' || to.path === '/register') && token) {
-        return next('/dashnoard')
+    if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+        await authStore.fetchUser()
+
+        if (!authStore.isAuthenticated) {
+            return { path: '/login' }
+        }
     }
-
-    if (to.meta.requiresAuth && !token) {
-        return next('/login')
-    }
-
-    next()
 })
-
-export default router

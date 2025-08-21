@@ -1,3 +1,4 @@
 .env
 app
 */cookies.txt
+*.sqlite

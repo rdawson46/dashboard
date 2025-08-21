@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -12,14 +11,15 @@ import (
 
 // ========== JWT FUNCTIONS ==========
 
-type User struct {
+type User_jwt struct {
     Username string `json:"username"`
-    ID int `json:"id"`
+    ID int64 `json:"id"`
 }
 
 
 type Claims struct {
     Username string `json:"username"`
+	ID int64 `json:"id"`
     jwt.RegisteredClaims
 }
 
@@ -35,9 +35,10 @@ func NewJWTManager(secretKey string, tokenDuration time.Duration) *JWTManager {
     }
 }
 
-func (manager *JWTManager) GenerateToken(user *User) (string, error) {
+func (manager *JWTManager) GenerateToken(user *User_jwt) (string, error) {
     claims := &Claims{
         Username: user.Username,
+		ID: user.ID,
         RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(manager.tokenDuration)),
             IssuedAt: jwt.NewNumericDate(time.Now()),
@@ -83,6 +84,7 @@ func (manager  *JWTManager) RefreshToken(tokenString string) (string, error) {
 
     newClaims := &Claims{
         Username: claims.Username,
+		ID: claims.ID,
         RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(manager.tokenDuration)),
             IssuedAt: jwt.NewNumericDate(time.Now()),
@@ -117,8 +119,9 @@ func (manager *JWTManager) AuthMiddleware(next http.HandlerFunc) http.HandlerFun
             return
         }
 
-        r = r.WithContext(contextWithUser(r.Context(), &User{
+        r = r.WithContext(contextWithUser(r.Context(), &User_jwt{
             Username: claims.Username,
+			ID: claims.ID,
         }))
 
         next(w, r)
@@ -147,8 +150,9 @@ func (manager *JWTManager) AuthApiMiddleware(next http.HandlerFunc) http.Handler
             return
         }
 
-        r = r.WithContext(contextWithUser(r.Context(), &User{
+        r = r.WithContext(contextWithUser(r.Context(), &User_jwt{
             Username: claims.Username,
+			ID: claims.ID,
         }))
 
         next(w, r)
@@ -192,15 +196,3 @@ func (manager *JWTManager) ClearTokenCookie(w http.ResponseWriter) {
     http.SetCookie(w, cookie)
 }
 
-type contextKey string
-
-const userContextKey contextKey = "user"
-
-func contextWithUser(ctx context.Context, user *User) context.Context {
-    return context.WithValue(ctx, userContextKey, user)
-}
-
-func userFromContext(ctx context.Context) (*User, bool) {
-    user, ok := ctx.Value(userContextKey).(*User)
-    return user, ok
-}

@@ -87,27 +87,41 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// headers for SSE
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control", "*")
-
-
-	flusher, ok := w.(http.Flusher)
-
-	if !ok {
-		s.logger.Error("Failed to get flusher")
-		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
-		return
-	}
-
 	var chatReq api.StreamRequest
 	err := json.NewDecoder(r.Body).Decode(&chatReq)
 
 	if err != nil {
 		s.logger.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	user, ok := userFromContext(r.Context())
+
+	// user not found
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"Error": "User not found"})
+		return
+	}
+
+	if user.Username != chatReq.Username {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"Error": "Invalid username"})
+		return
+	}
+
+	// headers for SSE
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control", "*")
+
+	flusher, ok := w.(http.Flusher)
+
+	if !ok {
+		s.logger.Error("Failed to get flusher")
+		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
 		return
 	}
 
@@ -136,6 +150,7 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		"Starting stream",
 		"model", chatReq.Model,
 		"remote", r.RemoteAddr,
+		"user", user.Username,
 	)
 
 	go oc.Stream(ctx, chatReq, chatReq.Model, msgChan, errChan)
@@ -177,6 +192,7 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		"Streaming finished",
 		"token_count", token_count,
 		"remote", r.RemoteAddr,
+		"user", user.Username,
 	)
 
 	fmt.Fprintf(w, "data: %s\n\n", `{"done": true}`)

@@ -6,6 +6,10 @@ export const useAuthStore = defineStore('auth', {
         isAuthenticated: false
     }),
 
+    getters: {
+        username: (state) => state.user ? state.user.username : null,
+    },
+
     actions: {
         async fetchUser() {
             // TODO: implement this on the go end
@@ -19,7 +23,7 @@ export const useAuthStore = defineStore('auth', {
 
             const data = await res.json()
 
-            this.user = data.user
+            this.user = data
             this.isAuthenticated = true
         },
 

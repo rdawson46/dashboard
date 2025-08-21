@@ -6,6 +6,9 @@ import hljs from 'highlight.js';
 import 'highlight.js/styles/atom-one-dark.css';
 import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore();
 
 const searchActive = ref(false);
 const codeActive = ref(false);
@@ -116,6 +119,7 @@ async function stream(url, body) {
   body['model'] = modelSelector.value.value
   body['webSearch'] = searchActive.value
   body['code'] = codeActive.value
+  body['username'] = authStore.username
 
   try {
     const response = await fetch(url, {

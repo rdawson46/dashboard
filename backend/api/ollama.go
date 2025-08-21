@@ -19,6 +19,7 @@ type StreamRequest struct {
 	Websearch bool `json:"webSearch"`
 	Code bool `json:"code"`
 	Model string `json:"model"`
+	Username string `json:"username"`
 }
 
 func getWebSearchTool() api.Tool {

@@ -28,8 +28,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    w.Header().Set("Content-Type", "application/json")
-	http.Redirect(w, r, "/health", http.StatusFound)
+	http.Redirect(w, r, "/health", http.StatusTemporaryRedirect)
 }
 
 func healthCheck(w http.ResponseWriter, r *http.Request) {

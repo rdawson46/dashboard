@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+    "strconv"
 
 	ollama "github.com/ollama/ollama/api"
 	api "github.com/rdawson46/dashboard/api"
@@ -27,6 +28,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+    w.Header().Set("Content-Type", "application/json")
 	http.Redirect(w, r, "/health", http.StatusFound)
 }
 
@@ -81,6 +83,7 @@ func chatHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // will work on to replace the chatHandler
+// TODO: add in user ID as well and along with username
 func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -110,6 +113,49 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]string{"Error": "Invalid username"})
 		return
 	}
+
+    // check for message id
+    var messageIdString string
+    if chatReq.MessageId == "" {
+        // TODO: need to create the session
+
+        s.logger.Infof(
+            "Creating new chat for user %s", 
+            user.Username,
+        )
+
+        id, err := s.db.CreateMessage(r.Context(), user.ID, chatReq.Query)
+
+        if err != nil {
+            w.WriteHeader(http.StatusInternalServerError)
+            json.NewEncoder(w).Encode(map[string]string{"Error": "Unable to Create Chat"})
+            s.logger.Error(
+                "Failed to Create Chat",
+                "model", chatReq.Model,
+                "remote", r.RemoteAddr,
+                "user", user.Username,
+            )
+            return
+        }
+
+        messageIdString = strconv.FormatInt(id, 10)
+
+        s.logger.Info(
+            "New Chat ID",
+            "User", user.Username,
+            "Chat Id", id,
+        )
+    } else {
+        messageIdString = chatReq.MessageId
+    }
+
+    messageId, err := strconv.ParseInt(messageIdString, 10, 64)
+
+    if err != nil {
+        s.logger.Errorf("Invalid id: %s\nError: %s", messageIdString, err.Error())
+        http.Error(w, "Failed to indentify chat", http.StatusInternalServerError)
+        return
+    }
 
 	// headers for SSE
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -156,6 +202,7 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 	go oc.Stream(ctx, chatReq, chatReq.Model, msgChan, errChan)
 
 	token_count := 0
+    chatRespone := ""
 	OuterLoop:
 	for {
 		select {
@@ -163,6 +210,16 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				break OuterLoop
 			}
+
+            switch resp.Message.Role{
+            case "assistant":
+                chatRespone += resp.Message.Content
+            case "tool":
+                chatReq.Query = append(
+                    chatReq.Query,
+                    resp.Message,
+                )
+            }
 
 			// encode resp
 			b, err := json.Marshal(resp)
@@ -197,6 +254,36 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintf(w, "data: %s\n\n", `{"done": true}`)
 	flusher.Flush()
+
+    final := ollama.Message{
+    	Role:      "assistant",
+    	Content:   chatRespone,
+    }
+
+    chatReq.Query = append(
+        chatReq.Query,
+        final,
+    )
+
+    success, err := s.db.AddMessage(r.Context(), messageId, user.ID, chatReq.Query)
+
+    if err != nil {
+        s.logger.Error(err.Error())
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    if !success {
+        s.logger.Error("Failed to add messages")
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+	s.logger.Info(
+		"Chat successfully updated",
+		"user", user.Username,
+        "chat id", messageId,
+	)
 }
 
 func modelListHandler(w http.ResponseWriter, r *http.Request) {

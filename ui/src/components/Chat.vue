@@ -10,6 +10,10 @@ import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore();
 
+
+// will need to make a store for this
+const messageId = ref(null);
+
 const searchActive = ref(false);
 const codeActive = ref(false);
 
@@ -116,10 +120,23 @@ async function copyToClip(text) {
 }
 
 async function stream(url, body) {
+  if (!authStore.username) {
+    notify("No username")
+    return
+  }
+
+  if (!authStore.id) {
+    notify("No user id")
+    return
+  }
+
   body['model'] = modelSelector.value.value
   body['webSearch'] = searchActive.value
   body['code'] = codeActive.value
   body['username'] = authStore.username
+  body['userId'] = authStore.id.toString()
+
+  body['messageId'] = messageId.value
 
   try {
     const response = await fetch(url, {

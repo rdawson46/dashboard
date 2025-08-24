@@ -9,8 +9,9 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// TODO:
 type Message_db struct {
+    Id int64
+    Messages []ollama.Message
 }
 
 // TODO:
@@ -54,7 +55,7 @@ func (r *sqliteRepo) GetMessageCount() () {}
 func (r *sqliteRepo) UpdateMessage() () {}
 
 // TODO: test this out
-func (r *sqliteRepo) CreateMessage(ctx context.Context, userId int64, message []ollama.Message) (int64, error) {
+func (r *sqliteRepo) CreateMessage(ctx context.Context, userId int64, messages []ollama.Message) (int64, error) {
 	/*
 	1. have to generate the description
 	2. insert into db
@@ -63,17 +64,9 @@ func (r *sqliteRepo) CreateMessage(ctx context.Context, userId int64, message []
 	*/
 
 	// TEMP: grab first 10 chars of the first user message
-	var lastQ string
-	for _, m := range message {
-		if m.Role == "user" {
-			lastQ = m.Content
-			break
-		}
-	}
+    desc := generateDesc(messages)
 
-	desc := lastQ[:10]
-
-	messageString, err := json.Marshal(message)
+	messageString, err := json.Marshal(messages)
 
 	if err != nil {
 		return 0, errors.New("Couldn't marshal messages")
@@ -128,6 +121,53 @@ func (r *sqliteRepo) GetDescriptions(ctx context.Context, userId int64, limit, o
 }
 
 // HACK: returning bool as a temp placeholder
-func (r *sqliteRepo) AddMessage(ctx context.Context, messageId, userId int64, message []ollama.Message) (bool, error) {
-	return false, nil
+func (r *sqliteRepo) AddMessage(ctx context.Context, messageId, userId int64, messages []ollama.Message) (bool, error) {
+    /*
+     **kind of a terrible impl**
+    */
+
+    messageString, err := json.Marshal(messages)
+
+    if err != nil {
+        return false, err
+    }
+
+    query := `UPDATE messages
+    SET messages = ?
+    WHERE id = ? AND user_id = ?`
+
+    result, err := r.db.Exec(query, string(messageString), messageId, userId)
+
+    if err != nil {
+        return false, err
+    }
+
+    i, err := result.RowsAffected()
+
+    if err != nil {
+        return false, err
+    }
+
+    if i == 0 { return false, nil }
+
+	return true, nil
+}
+
+func generateDesc(message []ollama.Message) string {
+	var lastQ string
+	for _, m := range message {
+		if m.Role == "user" {
+			lastQ = m.Content
+			break
+		}
+	}
+
+    var desc string
+    if len(lastQ) >= 10 {
+        desc = lastQ[:10]
+    } else {
+        desc = lastQ
+    }
+
+    return desc
 }

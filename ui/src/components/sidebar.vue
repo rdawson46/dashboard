@@ -2,6 +2,9 @@
 import { ref, onMounted } from 'vue';
 import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore();
 
 const history = ref([]);
 
@@ -21,6 +24,87 @@ async function getHistory() {
     notify(`Can't get chat history`)
     throw e
   }
+}
+
+async function deleteChat(chatId) {
+    if (!authStore.id) {
+      notify('No user id')
+    }
+
+    const body = {
+      'userId': authStore.id.toString(),
+      'ChatId': chatId.toString()
+    }
+
+    try {
+      const response = await fetch('/api/deleteMessages', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        notify(`Error: ${response.status} ${response.statusText}`);
+        return;
+      }
+
+      const data = await response.json();
+
+      console.log(data)
+
+      if (!data['Status'] && data['Status'] != 'ok') {
+        notify('Failed to delete chat')
+        return
+      }
+      for (let i = 0; i < history.value.length; i++) {
+        if (history.value[i].id === chatId) {
+          history.value.splice(i, 1)
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing JSON:', e);
+      notify('Error processing server response.');
+    }
+}
+
+async function selectChat(chatId) {
+    if (!authStore.id) {
+      notify('No user id')
+    }
+
+    const body = {
+      'userId': authStore.id.toString(),
+      'ChatId': chatId.toString()
+    }
+
+    console.log(`Select: ${chatId}`)
+
+    try {
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        notify(`Error: ${response.status} ${response.statusText}`);
+        return;
+      }
+
+      const data = await response.json();
+
+      console.log(data)
+
+    } catch (e) {
+      console.error('Error parsing JSON:', e);
+      notify('Error processing server response.');
+    }
 }
 
 onMounted(async () => {
@@ -47,7 +131,12 @@ onMounted(async () => {
     <div class="history">
       <h3>History</h3>
       <ul>
-        <li v-for="h in history" :key="h.id">{{ h.description }}</li>
+        <li class="item" v-for="h in history" :key="h.id">
+            <span @click="selectChat(h.id)">
+                {{ h.description }}
+            </span>
+            <i class="fa-solid fa-trash space" @click="deleteChat(h.id)"></i>
+        </li>
       </ul>
     </div>
     <div class="logout">
@@ -155,6 +244,19 @@ onMounted(async () => {
 
 .logout a i {
     margin-right: 1rem;
+}
+
+.item {
+    display: flex;
+}
+
+.item i {
+    visibility: hidden;
+    margin-left: auto;
+}
+
+.item:hover i {
+    visibility: visible;
 }
 
 </style>

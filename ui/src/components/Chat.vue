@@ -136,7 +136,7 @@ async function stream(url, body) {
   body['username'] = authStore.username
   body['userId'] = authStore.id.toString()
 
-  body['messageId'] = messageId.value
+  body['messageId'] = messageId.value ? messageId.value.toString() : null
 
   try {
     const response = await fetch(url, {
@@ -176,6 +176,16 @@ async function stream(url, body) {
           if (jsonStr.trim()) {
             try {
               const data = JSON.parse(jsonStr);
+
+              console.log(data)
+
+              if (data.type) {
+                console.log('messages Id set')
+                const m = data.messageId;
+                messageId.value = m;
+                continue;
+              }
+
               if (data.done) {
                 if (data.message.content.length) {
                   fullResponse += data.message.content

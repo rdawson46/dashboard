@@ -120,6 +120,26 @@ func (r *sqliteRepo) GetDescriptions(ctx context.Context, userId int64, limit, o
 	return descs, nil
 }
 
+func (r *sqliteRepo) DeleteMessage(ctx context.Context, id int64, user_id int64) (bool, error) {
+	query := `DELETE FROM messages
+	WHERE id = ? AND user_id = ?`
+
+	result, err := r.db.Exec(query, id, user_id)
+
+	if err != nil {
+        return false, err
+	}
+
+	i, err := result.RowsAffected()
+
+	if i <= 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+
 // HACK: returning bool as a temp placeholder
 func (r *sqliteRepo) AddMessage(ctx context.Context, messageId, userId int64, messages []ollama.Message) (bool, error) {
     /*

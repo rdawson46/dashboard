@@ -18,6 +18,7 @@ type Repository interface {
 
     // Messages
     GetMessage(ctx context.Context, id int64) ([]ollama.Message, error)
+    DeleteMessage(ctx context.Context, id int64, user_id int64) (bool, error)
     GetMessages() ()
     GetMessageCount() ()
 

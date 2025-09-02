@@ -116,8 +116,6 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
     // check for message id
     var messageIdString string
     if chatReq.MessageId == "" {
-        // TODO: need to create the session
-
         s.logger.Infof(
             "Creating new chat for user %s", 
             user.Username,
@@ -169,6 +167,26 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
 		return
 	}
+
+	idMessage := map[string]any{
+		"type": "Message ID",
+		"messageId": messageId,
+	}
+
+	b, err := json.Marshal(idMessage)
+
+	if err != nil {
+		s.logger.Error(err.Error())
+		http.Error(w, "failed to marshal resp", http.StatusInternalServerError)
+		return
+	}
+
+
+	// TODO: fix this logging
+	s.logger.Info("Setting chat Id")
+	fmt.Fprintf(w, "data: %s\n\n", b)
+	flusher.Flush()
+	s.logger.Info("Chat Id set")
 
 	url := os.Getenv("OLLAMA_URL")
 
@@ -408,23 +426,6 @@ func (s *Server) chatDescriptionHandler(w http.ResponseWriter, r *http.Request) 
 		"path", r.URL.Path,
 	)
 
-	/*
-	history := []db.ChatDesc{
-		{
-			Description: "questions",
-			Id: 1,
-		},
-		{
-			Description: "answers",
-			Id: 2,
-		},
-		{
-			Description: "coding",
-			Id: 3,
-		},
-	}
-	*/
-
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(history)
@@ -597,6 +598,157 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 }
 
 
+func (s *Server) deleteChatHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	type deleteReqStruct struct  {
+		ChatId string `json:"chatId"`
+		UserId string `json:"userId"`
+	}
+
+	var delReq deleteReqStruct
+	err := json.NewDecoder(r.Body).Decode(&delReq)
+
+	if err != nil {
+		s.logger.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	user, ok := userFromContext(r.Context())
+
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"Error": "User not found"})
+		return
+	}
+
+	userId, err := strconv.ParseInt(delReq.UserId, 10, 64)
+
+    if err != nil {
+        s.logger.Errorf("Invalid id: %s\nError: %s", delReq.UserId, err.Error())
+        http.Error(w, "Failed to indentify chat", http.StatusInternalServerError)
+        return
+    }
+
+	if user.ID != userId {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"Error": "Invalid username"})
+		return
+	}
+
+	chatId, err := strconv.ParseInt(delReq.ChatId, 10, 64)
+
+    if err != nil {
+        s.logger.Errorf("Invalid id: %s\nError: %s", delReq.UserId, err.Error())
+        http.Error(w, "Failed to indentify chat", http.StatusInternalServerError)
+        return
+    }
+
+	w.Header().Set("Content-Type", "application/json")
+
+	ok, err = s.db.DeleteMessage(r.Context(), chatId, userId)
+
+	if err != nil {
+        s.logger.Errorf("Failed to delete row", delReq.UserId, err.Error())
+		json.NewEncoder(w).Encode(map[string]string{"Status": "failed", "Message": "Row failed to delete"})
+		w.WriteHeader(http.StatusInternalServerError)
+        return
+	}
+
+	if !ok {
+        s.logger.Errorf("Did not delete row", delReq.UserId)
+		json.NewEncoder(w).Encode(map[string]string{"Status": "failed", "Message": "Row not deleted"})
+		w.WriteHeader(http.StatusInternalServerError)
+        return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{"Status": "ok", "Message": ""})
+    w.WriteHeader(http.StatusOK)
+	return
+}
+
+
+func (s *Server) getChatHandler(w http.ResponseWriter, r *http.Request) {
+	/*
+
+	- get user ID and the chat ID
+	- check association
+	- return the chat history
+
+	*/
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	type getChatStruct struct {
+		ChatId string `json:"chatId"`
+		UserId string `json:"userId"`
+	}
+
+	var getReq getChatStruct
+	err := json.NewDecoder(r.Body).Decode(&getReq)
+
+
+	if err != nil {
+		s.logger.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	user, ok := userFromContext(r.Context())
+
+
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"Error": "User not found"})
+		return
+	}
+
+	userId, err := strconv.ParseInt(getReq.UserId, 10, 64)
+
+    if err != nil {
+        s.logger.Errorf("Invalid id: %s\nError: %s", getReq.UserId, err.Error())
+        http.Error(w, "Failed to indentify chat", http.StatusInternalServerError)
+        return
+    }
+
+	if user.ID != userId {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"Error": "Invalid username"})
+		return
+	}
+
+	chatId, err := strconv.ParseInt(getReq.ChatId, 10, 64)
+
+    if err != nil {
+        s.logger.Errorf("Invalid id: %s\nError: %s", getReq.UserId, err.Error())
+        http.Error(w, "Failed to indentify chat", http.StatusInternalServerError)
+        return
+    }
+
+	w.Header().Set("Content-Type", "application/json")
+
+	messages, err := s.db.GetMessage(r.Context(), chatId)
+
+	if err != nil {
+		s.logger.Errorf("Failed to load Messages:", getReq.UserId, err.Error())
+		json.NewEncoder(w).Encode(map[string]string{"Status": "failed", "Message": "Failed to get messages"})
+		w.WriteHeader(http.StatusInternalServerError)
+        return
+	}
+
+	json.NewEncoder(w).Encode(messages)
+    w.WriteHeader(http.StatusOK)
+	return
+}
+
+
 // =======================================
 
 
@@ -610,18 +762,15 @@ func addRoutes(h *http.ServeMux, s *Server) {
     h.HandleFunc("/health", healthCheck)
 
     // user status routes
-	// TODO: will have to set up as an api and requires DB
     h.HandleFunc("/api/login", s.loginHandler)
     h.HandleFunc("/api/logout", s.logoutHandler)
+
+	// TODO: will have to set up as an api and requires DB
     h.HandleFunc("/api/reresh", s.refreshHandler)
 
-    // TODO: add user to db
     h.HandleFunc("/api/register", s.register)
 
-    // api auth handler
-    h.HandleFunc("/api/chat", s.jwt_manager.AuthApiMiddleware(
-        s.rateLimitMiddleware(chatHandler),
-    ))
+    h.HandleFunc("/api/chat", s.jwt_manager.AuthApiMiddleware(s.rateLimitMiddleware(chatHandler)))
 
     h.HandleFunc("/api/stream", s.jwt_manager.AuthApiMiddleware(s.streamHandler))
     h.HandleFunc("/api/modelList", s.jwt_manager.AuthApiMiddleware(modelListHandler))
@@ -630,6 +779,9 @@ func addRoutes(h *http.ServeMux, s *Server) {
 	h.HandleFunc("/api/chatDescription", s.jwt_manager.AuthApiMiddleware(s.chatDescriptionHandler))
 
 	h.HandleFunc("/api/me", s.jwt_manager.AuthApiMiddleware(s.verifyHandler))
+
+	h.HandleFunc("/api/messages", s.jwt_manager.AuthApiMiddleware(s.getChatHandler))
+	h.HandleFunc("/api/deleteMessages", s.jwt_manager.AuthApiMiddleware(s.deleteChatHandler))
 }
 
 // =======================================

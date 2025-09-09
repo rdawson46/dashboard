@@ -12,7 +12,7 @@ import (
 	ollama "github.com/ollama/ollama/api"
 )
 
-func _main() {
+func __main() {
     err := godotenv.Load()
 
     if err != nil {

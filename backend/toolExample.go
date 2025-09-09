@@ -106,7 +106,7 @@ func __main() {
                             resp.Message,
                             ollama.Message{
                                 Role: "tool",
-                                Content: fmt.Sprintf("result of addition is: %d", result),
+                                Content: fmt.Sprintf("result of addition is: %f", result),
                                 ToolCalls: []ollama.ToolCall{
                                     {
                                         Function: ollama.ToolCallFunction{

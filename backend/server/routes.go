@@ -116,9 +116,9 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
     // check for message id
     var messageIdString string
     if chatReq.MessageId == "" {
-        s.logger.Infof(
-            "Creating new chat for user %s", 
-            user.Username,
+        s.logger.Info(
+            "Creating new chat for user", 
+            "user", user.Username,
         )
 
         id, err := s.db.CreateMessage(r.Context(), user.ID, chatReq.Query)
@@ -405,15 +405,18 @@ func (s *Server) chatDescriptionHandler(w http.ResponseWriter, r *http.Request) 
 
 
 	// TEMP: placeholder until db is set up
-	s.logger.Infof(
-		"Pulling history for user: %d, username: %s", user.ID, user.Username,
+	s.logger.Info(
+		"Pulling user history",
+		"userId", user.ID,
+		"username", user.Username,
 	)
 
 	history, err := s.db.GetDescriptions(ctx, user.ID, 10, 0)
 
 	if err != nil {
 		s.logger.Error(
-			err.Error(),
+			"Failed to get descriptions",
+			"error", err.Error(),
 			"path", r.URL.Path,
 		)
 
@@ -421,8 +424,9 @@ func (s *Server) chatDescriptionHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	s.logger.Infof(
-		"History pulled of len: %d", len(history),
+	s.logger.Info(
+		"History pulled of len:",
+		len(history),
 		"path", r.URL.Path,
 	)
 
@@ -472,8 +476,9 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
-		s.logger.Errorf(
+		s.logger.Error(
 			"Failed to generate user token",
+			"error", err.Error(),
 			"path", r.URL.Path,
 		)
 		return
@@ -552,7 +557,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 
 	if password != confirm {
 		http.Error(w, "password and confirmation do not match", http.StatusUnauthorized)
-		s.logger.Errorf(
+		s.logger.Error(
 			"User registration failed: password != confirmation",
 			"path", r.URL.Path,
 		)
@@ -567,9 +572,9 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, "Failed to create user", http.StatusUnauthorized)
-		s.logger.Errorf(
+		s.logger.Error(
 			"User registration failed: Failed to create in db",
-			err.Error(),
+			"error", err.Error(),
 			"path", r.URL.Path,
 		)
 		return
@@ -583,8 +588,9 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
-		s.logger.Errorf(
+		s.logger.Error(
 			"Failed to generate user token",
+			"error", err.Error(),
 			"path", r.URL.Path,
 		)
 		return
@@ -629,7 +635,11 @@ func (s *Server) deleteChatHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := strconv.ParseInt(delReq.UserId, 10, 64)
 
     if err != nil {
-        s.logger.Errorf("Invalid id: %s\nError: %s", delReq.UserId, err.Error())
+        s.logger.Error(
+			"Invalid id",
+			"userId", delReq.UserId,
+			"error", err.Error(),
+		)
         http.Error(w, "Failed to indentify chat", http.StatusInternalServerError)
         return
     }
@@ -643,7 +653,11 @@ func (s *Server) deleteChatHandler(w http.ResponseWriter, r *http.Request) {
 	chatId, err := strconv.ParseInt(delReq.ChatId, 10, 64)
 
     if err != nil {
-        s.logger.Errorf("Invalid id: %s\nError: %s", delReq.UserId, err.Error())
+        s.logger.Error(
+			"Invalid id",
+			"userId", delReq.UserId,
+			"error", err.Error(),
+		)
         http.Error(w, "Failed to indentify chat", http.StatusInternalServerError)
         return
     }
@@ -653,14 +667,21 @@ func (s *Server) deleteChatHandler(w http.ResponseWriter, r *http.Request) {
 	ok, err = s.db.DeleteMessage(r.Context(), chatId, userId)
 
 	if err != nil {
-        s.logger.Errorf("Failed to delete row", delReq.UserId, err.Error())
+        s.logger.Error(
+			"Failed to delete row",
+			"userId", delReq.UserId,
+			"error", err.Error(),
+		)
 		json.NewEncoder(w).Encode(map[string]string{"Status": "failed", "Message": "Row failed to delete"})
 		w.WriteHeader(http.StatusInternalServerError)
         return
 	}
 
 	if !ok {
-        s.logger.Errorf("Did not delete row", delReq.UserId)
+        s.logger.Error(
+			"Did not delete row",
+			"userId", delReq.UserId,
+		)
 		json.NewEncoder(w).Encode(map[string]string{"Status": "failed", "Message": "Row not deleted"})
 		w.WriteHeader(http.StatusInternalServerError)
         return
@@ -737,7 +758,11 @@ func (s *Server) getChatHandler(w http.ResponseWriter, r *http.Request) {
 	messages, err := s.db.GetMessage(r.Context(), chatId)
 
 	if err != nil {
-		s.logger.Errorf("Failed to load Messages:", getReq.UserId, err.Error())
+		s.logger.Error(
+			"Failed to load Messages:",
+			"userId", getReq.UserId,
+			"error", err.Error(),
+		)
 		json.NewEncoder(w).Encode(map[string]string{"Status": "failed", "Message": "Failed to get messages"})
 		w.WriteHeader(http.StatusInternalServerError)
         return

@@ -159,8 +159,6 @@ async function stream(url, body) {
     let buffer = '';
     let fullResponse = '';
     
-    const assistantMessage = chatMessages.value[chatMessages.value.length - 1];
-    assistantMessage.content = '';
 
     while (true) {
       const { done, value } = await reader.read();
@@ -171,16 +169,16 @@ async function stream(url, body) {
       buffer = lines.pop() || '';
 
       for (const line of lines) {
+        let assistantMessage = chatMessages.value[chatMessages.value.length - 1];
+
         if (line.startsWith("data: ")) {
           const jsonStr = line.substring(6);
           if (jsonStr.trim()) {
             try {
               const data = JSON.parse(jsonStr);
 
-              console.log(data)
-
               if (data.type) {
-                console.log('messages Id set')
+                // TODO: swap to path param
                 const m = data.messageId;
                 messageId.value = m;
                 continue;
@@ -198,10 +196,14 @@ async function stream(url, body) {
               }
 
               if (data.message.tool_calls) {
+                console.log(data)
                 for (const toolCall of data.message.tool_calls) {
                   let { name } = toolCall;
                   console.log(toolCall)
                 }
+
+                assistantMessage = data
+                chatMessages.value.push({ role: 'assistant', content: '' });
                 continue
               }
 
@@ -233,7 +235,8 @@ async function query() {
   inputValue.value = '';
   historyIndex.value = -1;
 
-  chatMessages.value.push({ role: 'assistant', content: '<i class="fa-solid fa-spinner fa-spin-pulse"></i>' });
+  // chatMessages.value.push({ role: 'assistant', content: '<i class="fa-solid fa-spinner fa-spin-pulse"></i>' });
+  chatMessages.value.push({ role: 'assistant', content: '' });
   await stream('/api/stream', { "messages": apiMessages });
 }
 
@@ -271,7 +274,10 @@ onMounted(async () => {
     <div class="chat-messages" ref="chatContainer">
       <template v-for="(message, index) in chatMessages" :key="index">
 
-        <div v-if="message.role !== 'info'" :class="['message', message.role]" v-html="message.content"></div>
+        <div v-if="message.role !== 'info'" :class="['message', message.role]">
+            <span v-if="message.content.length" v-html="message.content"></span>
+            <i v-else class="fa-solid fa-spinner fa-spin-pulse"></i>
+        </div>
 
         <div v-else class="info-message">
           <div class="info-icon">

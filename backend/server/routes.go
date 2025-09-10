@@ -425,8 +425,8 @@ func (s *Server) chatDescriptionHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	s.logger.Info(
-		"History pulled of len:",
-		len(history),
+		"History pulled",
+		"length", len(history),
 		"path", r.URL.Path,
 	)
 
@@ -448,7 +448,7 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 	if username == "" || password == "" {
 		http.Error(w, "Improper values", http.StatusUnauthorized)
 		s.logger.Error(
-			"User registration failed: field left blank",
+			"Login failed: field left blank",
 			"path", r.URL.Path,
 		)
 		return
@@ -460,7 +460,8 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Couldn't login", http.StatusUnauthorized)
 		s.logger.Error(
-			"User registration failed: field left blank",
+			"Login failed: No user found",
+			"error", err.Error(),
 			"path", r.URL.Path,
 		)
 		return

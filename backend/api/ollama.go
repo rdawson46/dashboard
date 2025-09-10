@@ -200,6 +200,10 @@ func (oc OllamaClient) Stream(ctx context.Context, userReq StreamRequest, model 
             req.Messages = append(req.Messages, resp.Message)
             req.Messages = append(req.Messages, toolResponses...)
 
+			for _, toolResp := range toolResponses {
+				msgChan <- toolResp
+			}
+
             return oc.client.Chat(ctx, req, handler)
 		}
 

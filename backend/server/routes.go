@@ -186,7 +186,7 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 	s.logger.Info("Setting chat Id")
 	fmt.Fprintf(w, "data: %s\n\n", b)
 	flusher.Flush()
-	s.logger.Info("Chat Id set")
+	s.logger.Info("Chat Id set", "chatId", messageId)
 
 	url := os.Getenv("OLLAMA_URL")
 
@@ -206,7 +206,7 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		return 
 	}
 
-	msgChan := make(chan ollama.ChatResponse)
+	msgChan := make(chan any)
 	errChan := make(chan error)
 
 	s.logger.Info(
@@ -228,28 +228,44 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 				break OuterLoop
 			}
 
-            switch resp.Message.Role{
-            case "assistant":
-                chatRespone += resp.Message.Content
-            case "tool":
-                chatReq.Query = append(
-                    chatReq.Query,
-                    resp.Message,
-                )
+            var b []byte
+            var err error
+            switch resp := resp.(type) {
+            case ollama.ChatResponse:
+                switch resp.Message.Role {
+                case "assistant":
+                    chatRespone += resp.Message.Content
+                case "tool":
+                    chatReq.Query = append(
+                        chatReq.Query,
+                        resp.Message,
+                    )
+                }
+                token_count = resp.EvalCount;
+
+                b, err = json.Marshal(map[string]any{
+                    "type": "response",
+                    "data": resp,
+                })
+
+                if err != nil {
+                    s.logger.Error(err.Error())
+                    http.Error(w, "failed to marshal resp", http.StatusInternalServerError)
+                    return
+                }
+
+            case ollama.Message:
+                b, err = json.Marshal(map[string]any{
+                    "type": "message",
+                    "data": resp,
+                })
+
+            default:
+                s.logger.Warn("Stream sent unknown data type through channel")
             }
-
-			// encode resp
-			b, err := json.Marshal(resp)
-
-			if err != nil {
-				s.logger.Error(err.Error())
-				http.Error(w, "failed to marshal resp", http.StatusInternalServerError)
-				return
-			}
 
 			fmt.Fprintf(w, "data: %s\n\n", b)
 			flusher.Flush()
-			token_count = resp.EvalCount;
 		case err, ok := <-errChan:
 			if !ok {
 				break OuterLoop

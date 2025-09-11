@@ -13,7 +13,6 @@ export const useAuthStore = defineStore('auth', {
 
     actions: {
         async fetchUser() {
-            // TODO: implement this on the go end
             const res = await fetch('/api/me', { credentials: 'include' })
 
             if (!res.ok) {

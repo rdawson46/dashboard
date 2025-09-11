@@ -10,7 +10,6 @@ import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore();
 
-
 // will need to make a store for this
 const messageId = ref(null);
 
@@ -120,13 +119,9 @@ async function copyToClip(text) {
 }
 
 async function stream(url, body) {
-  if (!authStore.username) {
-    notify("No username")
-    return
-  }
-
-  if (!authStore.id) {
-    notify("No user id")
+  if (!authStore.username || !authStore.id) {
+    notify("Invalid username or id")
+    chatMessages.value.pop();
     return
   }
 
@@ -175,41 +170,55 @@ async function stream(url, body) {
           const jsonStr = line.substring(6);
           if (jsonStr.trim()) {
             try {
-              const data = JSON.parse(jsonStr);
+              let data = JSON.parse(jsonStr);
 
-              if (data.type) {
-                // TODO: swap to path param
-                const m = data.messageId;
-                messageId.value = m;
-                continue;
-              }
-
-              if (data.done) {
-                if (data.message.content.length) {
-                  fullResponse += data.message.content
-                  assistantMessage.content = marked.parse(fullResponse);
-                }
-                apiMessages.push({ 'role': 'assistant', 'content': fullResponse });
+              switch (data.type) {
+                case "Message Id":
+                  // TODO: swap to path param
+                  const m = data.messageId;
+                  messageId.value = m;
+                  continue;
+                  break
                 
-                chatMessages.value.push({ role: 'info', content: fullResponse, details: data });
-                return;
+                case "response":
+                  data = data.data
+
+                  if (data.done) {
+                    if (data.message.content.length) {
+                      fullResponse += data.message.content
+                      assistantMessage.content = marked.parse(fullResponse);
+                    }
+                    apiMessages.push({ 'role': 'assistant', 'content': fullResponse });
+                    
+                    chatMessages.value.push({ role: 'info', content: fullResponse, details: data });
+                    return;
+                  }
+
+                  if (data.message.tool_calls) {
+                    console.log(data)
+                    for (const toolCall of data.message.tool_calls) {
+                      let { name } = toolCall;
+                      console.log(toolCall)
+                    }
+                    assistantMessage.tool_calls = data.message.tool_calls
+                    continue
+                  }
+
+                  let token = data.message.content;
+                  fullResponse += token;
+                  assistantMessage.content = marked.parse(fullResponse);
+                  break;
+
+                case "message":
+                  data = data.data
+
+                  // will need to append this message to the chat
+                  chatMessages.value.push(data);
+                  chatMessages.value.push({ role: 'assistant', content: '' });
+                  break
+
               }
 
-              if (data.message.tool_calls) {
-                console.log(data)
-                for (const toolCall of data.message.tool_calls) {
-                  let { name } = toolCall;
-                  console.log(toolCall)
-                }
-
-                assistantMessage = data
-                chatMessages.value.push({ role: 'assistant', content: '' });
-                continue
-              }
-
-              let token = data.message.content;
-              fullResponse += token;
-              assistantMessage.content = marked.parse(fullResponse);
             } catch (e) {
               console.error('Error parsing JSON:', e);
               notify('Error processing server response.');
@@ -274,7 +283,10 @@ onMounted(async () => {
     <div class="chat-messages" ref="chatContainer">
       <template v-for="(message, index) in chatMessages" :key="index">
 
-        <div v-if="message.role !== 'info'" :class="['message', message.role]">
+        <div v-if="message.role == 'tool'">🔨 Tool Call Response Here 🔨</div>
+
+        <div v-else-if="message.role !== 'info'" :class="['message', message.role]">
+            <div v-if="message.tool_calls">Tool call request occured</div>
             <span v-if="message.content.length" v-html="message.content"></span>
             <i v-else class="fa-solid fa-spinner fa-spin-pulse"></i>
         </div>
@@ -294,33 +306,7 @@ onMounted(async () => {
       </template>
     </div>
 
-    <!--
-    <div class="chat-input-area">
-      <div class="input-wrapper glass-card">
-        <textarea
-          ref="inputContainer"
-          id="message-input"
-          placeholder="Type your message..."
-          v-model="inputValue"
-          @input="handleInput"
-          @keydown.down.exact.prevent="navigateHistoryDown()"
-          @keydown.up.exact.prevent="navigateHistoryUp()"
-          @keydown.enter.exact.prevent="query"
-        ></textarea>
-        <button id="send-btn" @click="query"><i class="fa-solid fa-paper-plane"></i></button>
-      </div>
-      <div class="input-options">
-        <button @click='searchActive = !searchActive' :class="{ active: searchActive }">
-          <i class="fa-solid fa-globe"></i>
-          <span>Web Search</span>
-        </button>
-        <button @click='codeActive = !codeActive' :class="{ active: codeActive }">
-          <i class="fa-solid fa-code"></i>
-          <span>Code</span>
-        </button>
-      </div>
-    </div>
-    -->
+
     <div class="input-area-main glass-card" :class="{ 'middle': !chatMessages.length }">
 
 

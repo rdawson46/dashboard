@@ -52,7 +52,7 @@ const login = async () => {
     }
 
     const data = await res.json()
-    authStore.setUser(data.user)
+    authStore.setUser(data)
     router.push('/chat')
   } catch (e) {
     notify("An error has occured while logging in")

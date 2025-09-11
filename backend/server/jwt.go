@@ -11,6 +11,7 @@ import (
 
 // ========== JWT FUNCTIONS ==========
 
+// TODO: add logger to jwt
 type User_jwt struct {
     Username string `json:"username"`
     ID int64 `json:"id"`

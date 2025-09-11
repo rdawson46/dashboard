@@ -45,7 +45,7 @@ func NewServer(config ServerConfig, db db.Repository) *Server {
 
     jwt_manager := NewJWTManager(
         "test_key",
-        time.Minute*10,
+        time.Minute*30,
     )
 
     return &Server{

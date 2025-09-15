@@ -182,11 +182,20 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 
-	// TODO: fix this logging
-	s.logger.Info("Setting chat Id")
+	s.logger.Info(
+		"Setting chat Id",
+		"User", user.Username,
+		"Chat Id", messageId,
+	)
+
 	fmt.Fprintf(w, "data: %s\n\n", b)
 	flusher.Flush()
-	s.logger.Info("Chat Id set", "chatId", messageId)
+
+	s.logger.Info(
+		"Chat Id set",
+		"User", user.Username,
+		"Chat Id", messageId,
+	)
 
 	url := os.Getenv("OLLAMA_URL")
 
@@ -214,6 +223,7 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		"model", chatReq.Model,
 		"remote", r.RemoteAddr,
 		"user", user.Username,
+		"chatId", messageIdString,
 	)
 
 	go oc.Stream(ctx, chatReq, chatReq.Model, msgChan, errChan)
@@ -283,6 +293,7 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		"token_count", token_count,
 		"remote", r.RemoteAddr,
 		"user", user.Username,
+		"chatId", messageIdString,
 	)
 
 	fmt.Fprintf(w, "data: %s\n\n", `{"done": true}`)
@@ -316,6 +327,7 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		"Chat successfully updated",
 		"user", user.Username,
         "chat id", messageId,
+		"chatId", messageIdString,
 	)
 }
 

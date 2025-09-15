@@ -173,11 +173,10 @@ async function stream(url, body) {
               let data = JSON.parse(jsonStr);
 
               switch (data.type) {
-                case "Message Id":
+                case "Message ID":
                   // TODO: swap to path param
                   const m = data.messageId;
                   messageId.value = m;
-                  continue;
                   break
                 
                 case "response":
@@ -216,7 +215,9 @@ async function stream(url, body) {
                   chatMessages.value.push(data);
                   chatMessages.value.push({ role: 'assistant', content: '' });
                   break
-
+                default:
+                  console.log(data)
+                  break
               }
 
             } catch (e) {

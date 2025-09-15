@@ -119,6 +119,7 @@ func (oc OllamaClient) newRequestWithMessages(messages []api.Message, model stri
             "top_p": 0.9,
         },
         Stream: &[]bool{stream}[0],
+		Think: &[]bool{false}[0],
     }
 }
 

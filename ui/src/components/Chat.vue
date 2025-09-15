@@ -287,9 +287,12 @@ onMounted(async () => {
         <div v-if="message.role == 'tool'">🔨 Tool Call Response Here 🔨</div>
 
         <div v-else-if="message.role !== 'info'" :class="['message', message.role]">
+
             <div v-if="message.tool_calls">Tool call request occured</div>
+
             <span v-if="message.content.length" v-html="message.content"></span>
-            <i v-else class="fa-solid fa-spinner fa-spin-pulse"></i>
+
+            <i v-else-if="!message.tool_calls.length && !message.content.length" class="fa-solid fa-spinner fa-spin-pulse"></i>
         </div>
 
         <div v-else class="info-message">

@@ -292,7 +292,7 @@ onMounted(async () => {
 
             <span v-if="message.content.length" v-html="message.content"></span>
 
-            <i v-else-if="!message.tool_calls.length && !message.content.length" class="fa-solid fa-spinner fa-spin-pulse"></i>
+            <i v-if="(!message.tool_calls || !message.tool_calls.length) && !message.content.length" class="fa-solid fa-spinner fa-spin-pulse"></i>
         </div>
 
         <div v-else class="info-message">

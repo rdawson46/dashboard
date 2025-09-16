@@ -8,7 +8,16 @@
     - improve code execution prompting
 * display:
     - *reasoning/thinking*
-    - tool calls
+    - tool calls 
+* MCP
+* notification/background job style
+* monitoring system
+* queue system for async tasks
+    - tool execution
+    - notification
+* file uploads
+* image support
+* vector DB/RAG
 * chat page styling 
     - long messages in input
     - sizing

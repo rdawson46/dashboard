@@ -284,11 +284,25 @@ onMounted(async () => {
     <div class="chat-messages" ref="chatContainer">
       <template v-for="(message, index) in chatMessages" :key="index">
 
-        <div v-if="message.role == 'tool'">🔨 Tool Call Response Here 🔨</div>
+        <div v-if="message.role == 'tool'" class="glass-card tool-result">
+            🔨 <b>Tool Call Response</b> 🔧
+            <br>
+            Response: {{message.content}}
+        </div>
 
         <div v-else-if="message.role !== 'info'" :class="['message', message.role]">
 
-            <div v-if="message.tool_calls">Tool call request occured</div>
+            <div v-if="message.tool_calls" class="glass-card tool-call">
+              🔨 <b>Tool Calls</b> 🔧
+
+              <template v-for="tool_call in message.tool_calls">
+                  <div>
+                      {{tool_call.function.name}}
+                      <br>
+                      {{tool_call.function.arguments}}
+                  </div>
+              </template>
+            </div>
 
             <span v-if="message.content.length" v-html="message.content"></span>
 
@@ -384,10 +398,18 @@ onMounted(async () => {
   padding-right: 1rem; /* for scrollbar */
 }
 
+.tool-call, .tool-result {
+    padding: 1rem;
+}
+
+.tool-result {
+    width: 85%;
+}
+
 .message {
-    padding: 3px 20px;
+    padding: 5px 15px;
     margin-bottom: 12px;
-    border-radius: 18px;
+    border-radius: 12px;
     word-wrap: break-word;
     max-width: 85%;
     line-height: 1.6;

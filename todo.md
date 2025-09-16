@@ -1,7 +1,6 @@
 # To Do
 * message history via the user
     * limit the number of items are shown in the UI
-* refactor the routes.go
 * user preference
     * model
 * reflect errors on UI for login and register page

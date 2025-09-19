@@ -78,15 +78,15 @@ func InitialEnvCheck() {
 
 
 // ========== MIDDLEWARE FUNCTIONS ==========
-func (s *Server) rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        if !s.rateLimiter.Allow() {
-            http.Error(w, "Rate limit Exceeded", http.StatusTooManyRequests)
-            return
-        }
+func (s *Server) rateLimitMiddleware(next http.Handler) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.rateLimiter.Allow() {
+			http.Error(w, "Rate limit Exceeded", http.StatusTooManyRequests)
+			return
+		}
 
-        next.ServeHTTP(w, r)
-    }
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *Server) loggingMiddleware(next http.Handler) http.Handler {

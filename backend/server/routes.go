@@ -27,7 +27,6 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 
-// TODO: set up and api handler
 func addRoutes(h *http.ServeMux, s *Server) {
     // basic routes
     h.HandleFunc("/", index)
@@ -36,24 +35,24 @@ func addRoutes(h *http.ServeMux, s *Server) {
     // user status routes
     h.HandleFunc("/api/login", s.loginHandler)
     h.HandleFunc("/api/logout", s.logoutHandler)
+    h.HandleFunc("/api/refresh", s.refreshHandler)
+    h.HandleFunc("/api/register", s.registerHandler)
 
-	// TODO: will have to set up as an api and requires DB
-    h.HandleFunc("/api/reresh", s.refreshHandler)
 
-    h.HandleFunc("/api/register", s.register)
+    h.Handle("/api/chat", s.jwt_manager.AuthMiddleware(
+		s.rateLimitMiddleware(http.HandlerFunc(chatHandler)),
+	))
 
-    h.HandleFunc("/api/chat", s.jwt_manager.AuthApiMiddleware(s.rateLimitMiddleware(chatHandler)))
+    h.Handle("/api/stream", s.jwt_manager.AuthMiddleware(s.streamHandler))
+    h.Handle("/api/modelList", s.jwt_manager.AuthMiddleware(modelListHandler))
+    h.Handle("/api/modelInfo", s.jwt_manager.AuthMiddleware(modelShowHandler))
 
-    h.HandleFunc("/api/stream", s.jwt_manager.AuthApiMiddleware(s.streamHandler))
-    h.HandleFunc("/api/modelList", s.jwt_manager.AuthApiMiddleware(modelListHandler))
-    h.HandleFunc("/api/modelInfo", s.jwt_manager.AuthApiMiddleware(modelShowHandler))
+	h.Handle("/api/chatDescription", s.jwt_manager.AuthMiddleware(s.chatDescriptionHandler))
 
-	h.HandleFunc("/api/chatDescription", s.jwt_manager.AuthApiMiddleware(s.chatDescriptionHandler))
+	h.Handle("/api/me", s.jwt_manager.AuthMiddleware(s.verifyHandler))
 
-	h.HandleFunc("/api/me", s.jwt_manager.AuthApiMiddleware(s.verifyHandler))
-
-	h.HandleFunc("/api/messages", s.jwt_manager.AuthApiMiddleware(s.getChatHandler))
-	h.HandleFunc("/api/deleteMessages", s.jwt_manager.AuthApiMiddleware(s.deleteChatHandler))
+	h.Handle("/api/messages", s.jwt_manager.AuthMiddleware(s.getChatHandler))
+	h.Handle("/api/deleteMessages", s.jwt_manager.AuthMiddleware(s.deleteChatHandler))
 }
 
 // =======================================

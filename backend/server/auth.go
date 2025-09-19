@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+
+	"github.com/rdawson46/dashboard/db"
 )
 
 
@@ -38,29 +40,7 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: make and set token in jwt
-	var user User_jwt
-
-	user.Username = user_db.Name
-	user.ID = user_db.ID
-
-	token, err := s.jwt_manager.GenerateToken(&user)
-
-	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
-		s.logger.Error(
-			"Failed to generate user token",
-			"error", err.Error(),
-			"path", r.URL.Path,
-		)
-		return
-	}
-
-	s.jwt_manager.SetTokenCookie(w, token)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(user)
+	s.setUserCookieResponse(*user_db, r, w)
 }
 
 func (s *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +86,7 @@ func (s *Server) verifyHandler(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(user)
 } 
 
-func (s *Server) register(w http.ResponseWriter, r *http.Request) {
+func (s *Server) registerHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid Method", http.StatusMethodNotAllowed)
 		return
@@ -138,7 +118,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		"path", r.URL.Path,
 	)
 
-	db_user, err := s.db.CreateUser(r.Context(), username, password)
+	user_db, err := s.db.CreateUser(r.Context(), username, password)
 
 	if err != nil {
 		http.Error(w, "Failed to create user", http.StatusUnauthorized)
@@ -150,11 +130,16 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := &User_jwt{} // username and ID
-	user.Username = db_user.Name
-	user.ID = db_user.ID
+	s.setUserCookieResponse(*user_db, r, w)
+}
 
-	token, err := s.jwt_manager.GenerateToken(user)
+
+func (s *Server)setUserCookieResponse(user_db db.User_db, r *http.Request, w http.ResponseWriter) {
+	var user User_jwt
+	user.Username = user_db.Name
+	user.ID = user_db.ID
+
+	token, err := s.jwt_manager.GenerateToken(&user)
 
 	if err != nil {
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
@@ -171,4 +156,5 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user)
+
 }

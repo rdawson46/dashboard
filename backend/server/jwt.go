@@ -99,65 +99,34 @@ func (manager  *JWTManager) RefreshToken(tokenString string) (string, error) {
     return token.SignedString(manager.secretKey)
 }
 
-// TODO: split between api and page routing handlers
-func (manager *JWTManager) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        token, err := manager.GetTokenFromCookie(r)
+func (manager *JWTManager) AuthMiddleware(next http.HandlerFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := manager.GetTokenFromCookie(r)
 
-        if err != nil {
-            if err == http.ErrNoCookie {
-                http.Error(w, "Unauthorized: No session cookie found", http.StatusUnauthorized)
-                return
-            }
-            http.Error(w, "Bad request", http.StatusUnauthorized)
-            return
-        }
+		if err != nil {
+			if err == http.ErrNoCookie {
+				http.Error(w, "Unauthorized: No session cookie found", http.StatusUnauthorized)
+				return
+			}
 
-        claims, err := manager.ValidateToken(token)
+			http.Error(w, "Bad request", http.StatusUnauthorized)
+			return
+		}
 
-        if err != nil {
-            http.Error(w, "Invalid Token", http.StatusUnauthorized)
-            return
-        }
+		claims, err := manager.ValidateToken(token)
 
-        r = r.WithContext(contextWithUser(r.Context(), &User_jwt{
-            Username: claims.Username,
+		if err != nil {
+			http.Error(w, "Invalid Token", http.StatusUnauthorized)
+			return
+		}
+
+		r = r.WithContext(contextWithUser(r.Context(), &User_jwt{
+			Username: claims.Username,
 			ID: claims.ID,
-        }))
+		}))
 
-        next(w, r)
-    }
-}
-
-// HACK: will have to decide when building the UI if the 2 auth funcs need seperation
-func (manager *JWTManager) AuthApiMiddleware(next http.HandlerFunc) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        token, err := manager.GetTokenFromCookie(r)
-
-        if err != nil {
-            if err == http.ErrNoCookie {
-                http.Error(w, "Unauthorized: No session cookie found", http.StatusUnauthorized)
-                return
-            }
-
-            http.Error(w, "Bad request", http.StatusUnauthorized)
-            return
-        }
-
-        claims, err := manager.ValidateToken(token)
-
-        if err != nil {
-            http.Error(w, "Invalid Token", http.StatusUnauthorized)
-            return
-        }
-
-        r = r.WithContext(contextWithUser(r.Context(), &User_jwt{
-            Username: claims.Username,
-			ID: claims.ID,
-        }))
-
-        next(w, r)
-    }
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (manager *JWTManager) SetTokenCookie(w http.ResponseWriter, token string) {
@@ -187,7 +156,7 @@ func (manager *JWTManager) ClearTokenCookie(w http.ResponseWriter) {
     cookie := &http.Cookie{
         Name: "auth_token",
         Value: "",
-        Expires: time.Now().Add(manager.tokenDuration),
+        Expires: time.Now(),
         HttpOnly: true,
         Secure: true,
         SameSite: http.SameSiteStrictMode,

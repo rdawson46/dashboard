@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
-	"golang.org/x/time/rate"
 	db "github.com/rdawson46/dashboard/db"
+	"golang.org/x/time/rate"
 )
 
 type ServerConfig struct {
@@ -44,7 +44,7 @@ func NewServer(config ServerConfig, db db.Repository) *Server {
     })
 
     jwt_manager := NewJWTManager(
-        "test_key",
+		os.Getenv("JWT_KEY"),
         time.Minute*30,
     )
 
@@ -65,6 +65,7 @@ func InitialEnvCheck() {
 		"OLLAMA_URL",
 		"CODE_URL",
 		"DB_URL",
+		"JWT_KEY",
 	}
 
 	for _, env := range required_envs {

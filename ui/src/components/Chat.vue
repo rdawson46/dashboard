@@ -7,6 +7,7 @@ import 'highlight.js/styles/atom-one-dark.css';
 import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
 import { useAuthStore } from '@/stores/auth'
+import { useStream } from '@/composables/stream.js'
 
 const authStore = useAuthStore();
 
@@ -118,124 +119,13 @@ async function copyToClip(text) {
   }
 }
 
-async function stream(url, body) {
+async function query() {
   if (!authStore.username || !authStore.id) {
     notify("Invalid username or id")
     chatMessages.value.pop();
     return
   }
 
-  body['model'] = modelSelector.value.value
-  body['webSearch'] = searchActive.value
-  body['code'] = codeActive.value
-  body['username'] = authStore.username
-  body['userId'] = authStore.id.toString()
-
-  body['messageId'] = messageId.value ? messageId.value.toString() : null
-
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-      credentials: 'include'
-    });
-
-    if (!response.ok) {
-      notify(`Error: ${response.status} ${response.statusText}`);
-      chatMessages.value.pop();
-      return;
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let fullResponse = '';
-    
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        let assistantMessage = chatMessages.value[chatMessages.value.length - 1];
-
-        if (line.startsWith("data: ")) {
-          const jsonStr = line.substring(6);
-          if (jsonStr.trim()) {
-            try {
-              let data = JSON.parse(jsonStr);
-
-              switch (data.type) {
-                case "Message ID":
-                  // TODO: swap to path param
-                  const m = data.messageId;
-                  messageId.value = m;
-                  break
-                
-                case "response":
-                  data = data.data
-
-                  if (data.done) {
-                    if (data.message.content.length) {
-                      fullResponse += data.message.content
-                      assistantMessage.content = marked.parse(fullResponse);
-                    }
-                    apiMessages.push({ 'role': 'assistant', 'content': fullResponse });
-                    
-                    chatMessages.value.push({ role: 'info', content: fullResponse, details: data });
-                    return;
-                  }
-
-                  if (data.message.tool_calls) {
-                    console.log(data)
-                    for (const toolCall of data.message.tool_calls) {
-                      let { name } = toolCall;
-                      console.log(toolCall)
-                    }
-                    assistantMessage.tool_calls = data.message.tool_calls
-                    continue
-                  }
-
-                  let token = data.message.content;
-                  fullResponse += token;
-                  assistantMessage.content = marked.parse(fullResponse);
-                  break;
-
-                case "message":
-                  data = data.data
-
-                  // will need to append this message to the chat
-                  chatMessages.value.push(data);
-                  chatMessages.value.push({ role: 'assistant', content: '' });
-                  break
-                default:
-                  console.log(data)
-                  break
-              }
-
-            } catch (e) {
-              console.error('Error parsing JSON:', e);
-              notify('Error processing server response.');
-            }
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error during fetch:', error);
-    notify('Error when querying agent.');
-    chatMessages.value.pop();
-  } 
-}
-
-async function query() {
   const chat = inputValue.value.trim();
   if (chat === '') return;
 
@@ -245,9 +135,19 @@ async function query() {
   inputValue.value = '';
   historyIndex.value = -1;
 
-  // chatMessages.value.push({ role: 'assistant', content: '<i class="fa-solid fa-spinner fa-spin-pulse"></i>' });
   chatMessages.value.push({ role: 'assistant', content: '' });
-  await stream('/api/stream', { "messages": apiMessages });
+
+  const body = {
+    'model': modelSelector.value.value,
+    'webSearch': searchActive.value,
+    'code': codeActive.value,
+    'username': authStore.username,
+    'userId': authStore.id.toString(),
+    'messageId': messageId.value ? messageId.value.toString() : null,
+    'messages': apiMessages
+  }
+
+  await useStream(body, messageId, apiMessages, chatMessages);
 }
 
 async function getModelList() {

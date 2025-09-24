@@ -8,6 +8,7 @@ import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
 import { useAuthStore } from '@/stores/auth'
 import { useStream } from '@/composables/stream.js'
+import Message from '@/components/Message.vue'
 
 const authStore = useAuthStore();
 
@@ -110,15 +111,6 @@ function notify(message) {
   });
 }
 
-async function copyToClip(text) {
-  try {
-    await navigator.clipboard.writeText(text)
-    notify("Copied to clipboard!")
-  } catch (error) {
-    console.error(error)
-  }
-}
-
 async function query() {
   if (!authStore.username || !authStore.id) {
     notify("Invalid username or id")
@@ -183,44 +175,7 @@ onMounted(async () => {
 
     <div class="chat-messages" ref="chatContainer">
       <template v-for="(message, index) in chatMessages" :key="index">
-
-        <div v-if="message.role == 'tool'" class="glass-card tool-result">
-            🔨 <b>Tool Call Response</b> 🔧
-            <br>
-            Response: {{message.content}}
-        </div>
-
-        <div v-else-if="message.role !== 'info'" :class="['message', message.role]">
-
-            <div v-if="message.tool_calls" class="glass-card tool-call">
-              🔨 <b>Tool Calls</b> 🔧
-
-              <template v-for="tool_call in message.tool_calls">
-                  <div>
-                      {{tool_call.function.name}}
-                      <br>
-                      {{tool_call.function.arguments}}
-                  </div>
-              </template>
-            </div>
-
-            <span v-if="message.content.length" v-html="message.content"></span>
-
-            <i v-if="(!message.tool_calls || !message.tool_calls.length) && !message.content.length" class="fa-solid fa-spinner fa-spin-pulse"></i>
-        </div>
-
-        <div v-else class="info-message">
-          <div class="info-icon">
-            <i class="fa-solid fa-circle-info"></i>
-            <div class="tooltip">
-              Time: {{ (message.details.total_duration / 1_000_000_000).toFixed(2) }}(s)<br>
-              Tokens: {{ message.details.eval_count }}<br>
-              Tokens/Sec: {{ (message.details.eval_count / (message.details.total_duration / 1_000_000_000)).toFixed(2) }}
-            </div>
-          </div>
-          <i class="fa-solid fa-clipboard" @click="copyToClip(message.content)"></i>
-        </div>
-
+          <Message v-bind="message"/>
       </template>
     </div>
 

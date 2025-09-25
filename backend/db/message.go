@@ -9,6 +9,12 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+var getChatbyIdQuery = `SELECT messages FROM messages WHERE id = ?`
+var createMessageQuery = `INSERT INTO messages (user_id, messages, description) VALUES (?, ?, ?)`
+var getDescriptionsQuery = `SELECT id, description FROM messages WHERE user_id = ? ORDER BY created_at LIMIT ? OFFSET ?`
+var deleteMessageQuery = `DELETE FROM messages WHERE id = ? AND user_id = ?`
+
+
 type Message_db struct {
     Id int64
     Messages []ollama.Message
@@ -31,10 +37,8 @@ var (
 )
 
 func (r *sqliteRepo) GetMessage(ctx context.Context, id int64) ([]ollama.Message, error) {
-	query := `SELECT messages FROM messages WHERE id = ?`
-
 	var messagesStr string
-	err := r.db.QueryRowContext(ctx, query, id).Scan(&messagesStr)
+	err := r.db.QueryRowContext(ctx, getChatbyIdQuery, id).Scan(&messagesStr)
 
 	if err != nil {
 		return nil, err
@@ -72,9 +76,7 @@ func (r *sqliteRepo) CreateMessage(ctx context.Context, userId int64, messages [
 		return 0, errors.New("Couldn't marshal messages")
 	}
 
-	query := `INSERT INTO messages (user_id, messages, description) VALUES (?, ?, ?)`
-
-	result, err := r.db.Exec(query, userId, string(messageString), desc)
+	result, err := r.db.Exec(createMessageQuery, userId, string(messageString), desc)
 
 	if err != nil {
 		return 0, err
@@ -90,9 +92,7 @@ func (r *sqliteRepo) CreateMessage(ctx context.Context, userId int64, messages [
 }
 
 func (r *sqliteRepo) GetDescriptions(ctx context.Context, userId int64, limit, offset int) (Descriptions, error) {
-	query := `SELECT id, description FROM messages WHERE user_id = ? ORDER BY created_at LIMIT ? OFFSET ?`
-
-	rows, err := r.db.QueryContext(ctx, query, userId, limit, offset)
+	rows, err := r.db.QueryContext(ctx, getDescriptionsQuery, userId, limit, offset)
 
 	if err != nil {
 		return nil, err
@@ -121,10 +121,7 @@ func (r *sqliteRepo) GetDescriptions(ctx context.Context, userId int64, limit, o
 }
 
 func (r *sqliteRepo) DeleteMessage(ctx context.Context, id int64, user_id int64) (bool, error) {
-	query := `DELETE FROM messages
-	WHERE id = ? AND user_id = ?`
-
-	result, err := r.db.Exec(query, id, user_id)
+	result, err := r.db.Exec(deleteMessageQuery, id, user_id)
 
 	if err != nil {
         return false, err
@@ -152,9 +149,7 @@ func (r *sqliteRepo) AddMessage(ctx context.Context, messageId, userId int64, me
         return false, err
     }
 
-    query := `UPDATE messages
-    SET messages = ?
-    WHERE id = ? AND user_id = ?`
+    query := `UPDATE messages SET messages = ? WHERE id = ? AND user_id = ?`
 
     result, err := r.db.Exec(query, string(messageString), messageId, userId)
 

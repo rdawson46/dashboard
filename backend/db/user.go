@@ -11,6 +11,15 @@ import (
     _ "modernc.org/sqlite"
 )
 
+
+var getUserQuery = `SELECT id, name, created_at FROM users WHERE id = ?`
+var getUsersQuery = `SELECT id, name, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?`
+var getUserCountQuery = `SELECT COUNT(*) FROM users`
+var createUserQuery = `INSERT INTO users (username, password) VALUES (?, ?)`
+var signInUserQuery = `SELECT * FROM users WHERE username = ?`
+var lastQuery = `SELECT id, username, created_at FROM users WHERE id = ?`
+
+
 // TODO: add logging and make theses tables
 
 type User_db struct {
@@ -32,9 +41,7 @@ var (
 )
 
 func (r *sqliteRepo) GetUser(ctx context.Context, id int64) (*User_db, error) {
-    query := `SELECT id, name, created_at FROM users WHERE id = ?`
-
-    row := r.db.QueryRowContext(ctx, query, id)
+    row := r.db.QueryRowContext(ctx, getUserQuery, id)
 
     var user User_db
     err := row.Scan(&user.ID, &user.Name, &user.CreatedAt)
@@ -50,9 +57,7 @@ func (r *sqliteRepo) GetUser(ctx context.Context, id int64) (*User_db, error) {
 
 
 func (r *sqliteRepo) GetUsers(ctx context.Context, limit, offset int64) ([]*User_db, error){
-    query := `SELECT id, name, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?`
-
-    rows, err := r.db.QueryContext(ctx, query, limit, offset)
+    rows, err := r.db.QueryContext(ctx, getUsersQuery, limit, offset)
 
     if err != nil {
         return nil, err
@@ -80,10 +85,8 @@ func (r *sqliteRepo) GetUsers(ctx context.Context, limit, offset int64) ([]*User
 
 
 func (r *sqliteRepo) GetUserCount(ctx context.Context) (int64, error) {
-    query := `SELECT COUNT(*) FROM users`
-
     var count int64
-    err := r.db.QueryRowContext(ctx, query).Scan(&count)
+    err := r.db.QueryRowContext(ctx, getUserCountQuery).Scan(&count)
 
     if err != nil {
         return 0, fmt.Errorf("failed to count users: %w", err)
@@ -104,9 +107,7 @@ func (r *sqliteRepo) CreateUser(ctx context.Context, username, password string) 
 		return nil, err
 	}
 
-	query := `INSERT INTO users (username, password) VALUES (?, ?)`
-
-	result, err := r.db.Exec(query, username, hashedPass)
+	result, err := r.db.Exec(createMessageQuery, username, hashedPass)
 
 	if err != nil {
 		return nil, err
@@ -119,7 +120,6 @@ func (r *sqliteRepo) CreateUser(ctx context.Context, username, password string) 
 	}
 
 	var insertedUser User_db
-	lastQuery := `SELECT id, username, created_at FROM users WHERE id = ?`
 	err = r.db.QueryRowContext(ctx, lastQuery, insertedId).Scan(&insertedUser.ID, &insertedUser.Name, &insertedUser.CreatedAt)
 
 	if err != nil {
@@ -135,8 +135,7 @@ func (r *sqliteRepo) UpdateUser() () {}
 
 
 func (r *sqliteRepo) SignInUser(ctx context.Context, username, enteredPassword string) (*User_db, error) {
-	query := `SELECT * FROM users WHERE username = ?`
-    row := r.db.QueryRowContext(ctx, query, username)
+    row := r.db.QueryRowContext(ctx, signInUserQuery, username)
 
     var user User_db
 	var hashedPass string

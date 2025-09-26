@@ -140,7 +140,7 @@ onMounted(async () => {
 
 .logo i {
   font-size: 2rem;
-  color: var(--primary-color);
+  color: var(--primary-color-light);
   margin-right: 1rem;
 }
 

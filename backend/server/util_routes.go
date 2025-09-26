@@ -158,8 +158,8 @@ func (s *Server) deleteChatHandler(w http.ResponseWriter, r *http.Request) {
             "userId", delReq.UserId,
             "error", err.Error(),
         )
-        json.NewEncoder(w).Encode(map[string]string{"Status": "failed", "Message": "Row failed to delete"})
         w.WriteHeader(http.StatusInternalServerError)
+        json.NewEncoder(w).Encode(map[string]string{"Status": "failed", "Message": "Row failed to delete"})
         return
     }
 
@@ -168,13 +168,13 @@ func (s *Server) deleteChatHandler(w http.ResponseWriter, r *http.Request) {
             "Did not delete row",
             "userId", delReq.UserId,
         )
-        json.NewEncoder(w).Encode(map[string]string{"Status": "failed", "Message": "Row not deleted"})
         w.WriteHeader(http.StatusInternalServerError)
+        json.NewEncoder(w).Encode(map[string]string{"Status": "failed", "Message": "Row not deleted"})
         return
     }
 
-    json.NewEncoder(w).Encode(map[string]string{"Status": "ok", "Message": ""})
     w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]string{"Status": "ok", "Message": ""})
     return
 }
 
@@ -248,12 +248,12 @@ func (s *Server) getChatHandler(w http.ResponseWriter, r *http.Request) {
 			"userId", getReq.UserId,
 			"error", err.Error(),
 		)
-		json.NewEncoder(w).Encode(map[string]string{"Status": "failed", "Message": "Failed to get messages"})
 		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"Status": "failed", "Message": "Failed to get messages"})
         return
 	}
 
-	json.NewEncoder(w).Encode(messages)
     w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(messages)
 	return
 }

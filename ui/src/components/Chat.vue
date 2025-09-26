@@ -142,6 +142,8 @@ async function query() {
     'messages': apiMessages
   }
 
+  console.log(`streaming with Id: ${messageId.value}`)
+
   await useStream(body, messageId, apiMessages, chatMessages);
 }
 
@@ -194,14 +196,35 @@ async function getMessages(id) {
   }
 }
 
+function parseLoadedMessages(messages) {
+  let result = []
+  if (!messages || !Array.isArray(messages) || !messages.length ) {
+    return
+  }
+
+  for (let message of messages) {
+    if (message.role == 'assistant') {
+      let temp = {...message}
+      temp.content = marked.parse(message.content)
+      result.push(temp)
+    } else {
+      result.push(message)
+    }
+  }
+
+  return result
+}
+
 watch(() => route.params.id, async (newId, oldId) => {
-  if (newId) {
+  console.log(newId)
+  if (newId && oldId != newId) {
     if (newId != messageId.value) {
-        console.log('running in watch')
+        console.log(`setting new ID: ${newId}`)
         messageId.value = newId
         let mess = await getMessages(messageId.value)
-        apiMessages.value = mess
-        chatMessages.value = mess
+        // apiMessages = mess
+        apiMessages.splice(0, apiMessages.length, ...mess)
+        chatMessages.value = parseLoadedMessages(mess)
     }
   }
 }, { immediate: true })
@@ -211,8 +234,9 @@ onMounted(async () => {
 
   if (messageId.value) {
     let mess = await getMessages(messageId.value)
-    apiMessages.value = mess
-    chatMessages.value = mess
+    // apiMessages = mess
+    apiMessages.splice(0, apiMessages.length, ...mess)
+    chatMessages.value = parseLoadedMessages(mess)
   }
 
 
@@ -237,7 +261,7 @@ onMounted(async () => {
     </div>
 
 
-    <div class="input-area-main glass-card" :class="{ 'middle': !chatMessages.length }">
+    <div class="input-area-main glass-card" :class="{ 'middle': !chatMessages || !chatMessages.length }">
 
 
       <div class="input-area-sub">

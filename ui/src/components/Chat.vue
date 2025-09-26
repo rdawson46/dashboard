@@ -142,8 +142,6 @@ async function query() {
     'messages': apiMessages
   }
 
-  console.log(`streaming with Id: ${messageId.value}`)
-
   await useStream(body, messageId, apiMessages, chatMessages);
 }
 
@@ -216,7 +214,6 @@ function parseLoadedMessages(messages) {
 }
 
 watch(() => route.params.id, async (newId, oldId) => {
-  console.log(newId)
   if (newId && oldId != newId) {
     if (newId != messageId.value) {
         console.log(`setting new ID: ${newId}`)
@@ -226,6 +223,12 @@ watch(() => route.params.id, async (newId, oldId) => {
         apiMessages.splice(0, apiMessages.length, ...mess)
         chatMessages.value = parseLoadedMessages(mess)
     }
+  }
+
+  if (!newId) {
+    messageId.value = newId
+    apiMessages.splice(0, apiMessages.length)
+    chatMessages.value = []
   }
 }, { immediate: true })
 

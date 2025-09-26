@@ -54,8 +54,6 @@ async function deleteChat(chatId) {
 
       const data = await response.json();
 
-      console.log(data)
-
       if (!data['Status'] && data['Status'] != 'ok') {
         notify('Failed to delete chat')
         return
@@ -88,20 +86,33 @@ onMounted(async () => {
       <h1>Chat</h1>
     </div>
     <ul class="nav-links">
+      <!-- 
       <li><a href="#" class="active"><i class="fa-solid fa-comments"></i><span>Chat</span></a></li>
+      -->
+      <li>
+          <RouterLink :to="{ name: 'New Chat' }" class="active">
+              <i class="fa-solid fa-comments"></i><span>Chat</span>
+          </RouterLink>
+      </li>
+
       <li><a href="#"><i class="fa-solid fa-user"></i><span>Profile</span></a></li>
       <li><a href="/models"><i class="fa-solid fa-cogs"></i><span>Models</span></a></li>
     </ul>
+
     <div class="history">
       <h3>History</h3>
+
+
       <ul>
         <li class="item" v-for="h in history" :key="h.id">
-            <RouterLink :to="{ name: 'Existing Chat', params: { id: h.id } }">
+            <RouterLink :to="{ name: 'Existing Chat', params: { id: h.id } }" class="history-link">
                 {{ h.description }}
             </RouterLink>
             <i class="fa-solid fa-trash space" @click="deleteChat(h.id)"></i>
         </li>
       </ul>
+
+
     </div>
     <div class="logout">
         <a href="/api/logout">
@@ -109,6 +120,7 @@ onMounted(async () => {
             <span>Logout</span>
         </a>
     </div>
+
   </nav>
 </template>
 
@@ -181,14 +193,23 @@ onMounted(async () => {
 }
 
 .history ul li {
-  padding: 0.5rem 0;
+  padding: 0.5rem 0.25rem;
   cursor: pointer;
-  opacity: 0.8;
+  opacity: 0.65;
   transition: opacity 0.3s ease;
+  margin: 0.15rem;
+  border-radius: 0.5rem;
+}
+
+.history-link {
+    color: var(--text-color);
+    text-decoration: none;
+    font-weight: 500;
 }
 
 .history ul li:hover {
   opacity: 1;
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .logout a {

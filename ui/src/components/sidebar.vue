@@ -2,7 +2,8 @@
 import { ref, onMounted } from 'vue';
 import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore } from '@/stores/auth';
+import { RouterLink } from 'vue-router';
 
 const authStore = useAuthStore();
 
@@ -70,43 +71,6 @@ async function deleteChat(chatId) {
     }
 }
 
-async function selectChat(chatId) {
-    if (!authStore.id) {
-      notify('No user id')
-    }
-
-    const body = {
-      'userId': authStore.id.toString(),
-      'ChatId': chatId.toString()
-    }
-
-    console.log(`Select: ${chatId}`)
-
-    try {
-      const response = await fetch('/api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-        credentials: 'include'
-      })
-
-      if (!response.ok) {
-        notify(`Error: ${response.status} ${response.statusText}`);
-        return;
-      }
-
-      const data = await response.json();
-
-      console.log(data)
-
-    } catch (e) {
-      console.error('Error parsing JSON:', e);
-      notify('Error processing server response.');
-    }
-}
-
 onMounted(async () => {
     try {
       const hist = await getHistory();
@@ -132,9 +96,9 @@ onMounted(async () => {
       <h3>History</h3>
       <ul>
         <li class="item" v-for="h in history" :key="h.id">
-            <span @click="selectChat(h.id)">
+            <RouterLink :to="{ name: 'Existing Chat', params: { id: h.id } }">
                 {{ h.description }}
-            </span>
+            </RouterLink>
             <i class="fa-solid fa-trash space" @click="deleteChat(h.id)"></i>
         </li>
       </ul>

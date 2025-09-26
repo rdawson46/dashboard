@@ -4,6 +4,8 @@ import hljs from 'highlight.js';
 import 'highlight.js/styles/atom-one-dark.css';
 import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
+import { router } from '@/router/index.js'
+
 
 const marked = new Marked(
   markedHighlight({
@@ -71,9 +73,10 @@ export async function useStream(
 
               switch (data.type) {
                 case "Message ID":
-                  // TODO: swap to path param
+                  if (messageId.value) break;
                   const m = data.messageId;
                   messageId.value = m;
+                  router.push({ name: "Existing Chat", params: { id: messageId.value } })
                   break
                 
                 case "response":

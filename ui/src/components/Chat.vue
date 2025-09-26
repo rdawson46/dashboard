@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch, nextTick, computed, reactive } from 'vue';
+import { ref, onMounted, watch, watchEffect, nextTick, computed, reactive } from 'vue';
 import { Marked } from 'marked';
 import { markedHighlight } from "marked-highlight";
 import hljs from 'highlight.js';
@@ -9,11 +9,13 @@ import 'vue3-toastify/dist/index.css';
 import { useAuthStore } from '@/stores/auth'
 import { useStream } from '@/composables/stream.js'
 import Message from '@/components/Message.vue'
+import { useRoute, useRouter } from 'vue-router';
+
+const route = useRoute();
 
 const authStore = useAuthStore();
 
-// will need to make a store for this
-const messageId = ref(null);
+const messageId = ref(route.params.id || null);
 
 const searchActive = ref(false);
 const codeActive = ref(false);
@@ -96,6 +98,7 @@ const marked = new Marked(
   })
 );
 
+
 watch(chatMessages, async () => {
   await nextTick();
   if (chatContainer.value) {
@@ -158,7 +161,61 @@ async function getModelList() {
   }
 }
 
+async function getMessages(id) {
+  if (!authStore.username || !authStore.id) {
+    notify("Invalid username or id")
+    chatMessages.value.pop();
+    return
+  }
+
+  const body = {
+    "chatId": messageId.value ? messageId.value.toString() : null,
+    "userId": authStore.id.toString(),
+  }
+
+  try {
+    const response = await fetch('/api/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body),
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      notify(`Error: ${response.status} ${response.statusText}`);
+      return;
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+watch(() => route.params.id, async (newId, oldId) => {
+  if (newId) {
+    if (newId != messageId.value) {
+        console.log('running in watch')
+        messageId.value = newId
+        let mess = await getMessages(messageId.value)
+        apiMessages.value = mess
+        chatMessages.value = mess
+    }
+  }
+}, { immediate: true })
+
 onMounted(async () => {
+  console.log(`Loaded with session: ${messageId.value}`)
+
+  if (messageId.value) {
+    let mess = await getMessages(messageId.value)
+    apiMessages.value = mess
+    chatMessages.value = mess
+  }
+
+
   inputContainer.value.focus();
   await getModelList()
 });

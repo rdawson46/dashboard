@@ -14,6 +14,14 @@ const routes = [
     {
         path: '/chat',
         component: ChatPage,
+        name: "New Chat",
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/chat/:id',
+        component: ChatPage,
+        name: "Existing Chat",
+        props: true,
         meta: { requiresAuth: true }
     },
     { path: '/:pathMatch(.*)*', component: NotFoundPage }

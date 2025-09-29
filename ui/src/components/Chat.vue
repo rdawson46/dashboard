@@ -257,10 +257,14 @@ onMounted(async () => {
       </select>
     </div>
 
-    <div class="chat-messages" ref="chatContainer">
+    <div v-if="chatMessages.length" class="chat-messages" ref="chatContainer">
       <template v-for="(message, index) in chatMessages" :key="index">
           <Message v-bind="message"/>
       </template>
+    </div>
+
+    <div class="welcome-container" v-else>
+        <h1>Hello <span class="username">{{authStore.username}}</span>, How can I help you?</h1>
     </div>
 
 
@@ -577,6 +581,17 @@ input-area-sub {
 
 #send-btn:hover {
     color: #81b2f3;
+}
+
+.welcome-container {
+    margin-top: auto;
+    margin-bottom: auto;
+    justify-content: center;
+    display: flex;
+}
+
+.username {
+    color: var(--primary-color-light);
 }
 
 </style>

@@ -9,6 +9,8 @@ const authStore = useAuthStore();
 
 const history = ref([]);
 
+const collapse = ref(false)
+
 function notify(message) {
     toast(message, {
         autoClose: 1000,
@@ -80,48 +82,62 @@ onMounted(async () => {
 </script>
 
 <template>
-  <nav class="sidebar glass-card">
-    <div class="logo">
-      <i class="fa-solid fa-robot"></i>
-      <h1>Chat</h1>
-    </div>
-    <ul class="nav-links">
-      <!-- 
-      <li><a href="#" class="active"><i class="fa-solid fa-comments"></i><span>Chat</span></a></li>
-      -->
-      <li>
-          <RouterLink :to="{ name: 'New Chat' }" class="active">
-              <i class="fa-solid fa-comments"></i><span>Chat</span>
-          </RouterLink>
-      </li>
+    <template v-if="!collapse">
+        <nav class="sidebar glass-card">
+            <div class="logo">
+                <i id="robot" class="fa-solid fa-robot"></i>
+                <h1>Chat</h1>
+                <button class="collapse-button" @click="collapse = !collapse">
+                    <i class="test fa-solid fa-bars"></i>
+                </button>
+            </div>
+            <ul class="nav-links">
+                <!-- 
+                    <li><a href="#" class="active"><i class="fa-solid fa-comments"></i><span>Chat</span></a></li>
+                -->
+                <li>
+                    <RouterLink :to="{ name: 'New Chat' }" class="active">
+                    <i class="fa-solid fa-comments"></i><span>Chat</span>
+                    </RouterLink>
+                </li>
 
-      <li><a href="#"><i class="fa-solid fa-user"></i><span>Profile</span></a></li>
-      <li><a href="/models"><i class="fa-solid fa-cogs"></i><span>Models</span></a></li>
-    </ul>
+                <li><a href="#"><i class="fa-solid fa-user"></i><span>Profile</span></a></li>
+                <li><a href="/models"><i class="fa-solid fa-cogs"></i><span>Models</span></a></li>
+            </ul>
 
-    <div class="history">
-      <h3>History</h3>
-
-
-      <ul>
-        <li class="item" v-for="h in history" :key="h.id">
-            <RouterLink :to="{ name: 'Existing Chat', params: { id: h.id } }" class="history-link">
-                {{ h.description }}
-            </RouterLink>
-            <i class="fa-solid fa-trash space" @click="deleteChat(h.id)"></i>
-        </li>
-      </ul>
+            <div class="history">
+                <h3>History</h3>
 
 
-    </div>
-    <div class="logout">
-        <a href="/api/logout">
-            <i class="fa-solid fa-right-from-bracket"></i>
-            <span>Logout</span>
-        </a>
-    </div>
+                <ul>
+                    <li class="item" v-for="h in history" :key="h.id">
+                        <RouterLink :to="{ name: 'Existing Chat', params: { id: h.id } }" class="history-link">
+                        {{ h.description }}
+                        </RouterLink>
+                        <i class="fa-solid fa-trash space" @click="deleteChat(h.id)"></i>
+                    </li>
+                </ul>
 
-  </nav>
+
+            </div>
+            <div class="logout">
+                <a href="/api/logout">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+
+        </nav>
+    </template>
+
+
+    <template v-else>
+        <div>
+            <button class="collapse-button" @click="collapse = !collapse">
+                <i class="test fa-solid fa-bars"></i>
+            </button>
+        </div>
+    </template>
 </template>
 
 <style scoped>
@@ -138,7 +154,7 @@ onMounted(async () => {
   margin-bottom: 3rem;
 }
 
-.logo i {
+.logo #robot {
   font-size: 2rem;
   color: var(--primary-color-light);
   margin-right: 1rem;
@@ -147,6 +163,13 @@ onMounted(async () => {
 .logo h1 {
   font-size: 1.5rem;
   font-weight: 700;
+}
+
+.collapse-button {
+    margin-left: auto;
+    margin-right: 0;
+    padding: 0.5rem;
+    font-size: 1.5rem;
 }
 
 .nav-links {

@@ -1,6 +1,19 @@
+# Issues
+* better animations
+* check for owner access of the chats
+* prevent loading deleted message
+    - error handling
+* switch message ID to uuid
+* UUID for Ids
+    - db rework/tweak
+* redirect when logged out after time
+* model preference
+    - storing
+    - retrieving
+    - applying
+
+
 # To Do
-* pull previous chats
-    * need to rework url with params
 * message history via the user
     * limit the number of items are shown in the UI
 * user preference by user

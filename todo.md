@@ -1,12 +1,8 @@
 # Issues
 * better animations
-* check for owner access of the chats
-* prevent loading deleted message
-    - error handling
 * switch message ID to uuid
 * UUID for Ids
     - db rework/tweak
-* redirect when logged out after time
 * model preference
     - storing
     - retrieving

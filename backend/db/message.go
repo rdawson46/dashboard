@@ -9,7 +9,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var getChatbyIdQuery = `SELECT messages FROM messages WHERE id = ?`
+var getChatbyIdQuery = `SELECT messages FROM messages WHERE id = ? AND user_id = ?`
 var createMessageQuery = `INSERT INTO messages (user_id, messages, description) VALUES (?, ?, ?)`
 var getDescriptionsQuery = `SELECT id, description FROM messages WHERE user_id = ? ORDER BY created_at LIMIT ? OFFSET ?`
 var deleteMessageQuery = `DELETE FROM messages WHERE id = ? AND user_id = ?`
@@ -36,9 +36,9 @@ var (
     ErrInvalidMessage = errors.New("invalid user ID")
 )
 
-func (r *sqliteRepo) GetMessage(ctx context.Context, id int64) ([]ollama.Message, error) {
+func (r *sqliteRepo) GetMessage(ctx context.Context, userId, messageId int64) ([]ollama.Message, error) {
 	var messagesStr string
-	err := r.db.QueryRowContext(ctx, getChatbyIdQuery, id).Scan(&messagesStr)
+	err := r.db.QueryRowContext(ctx, getChatbyIdQuery, messageId, userId).Scan(&messagesStr)
 
 	if err != nil {
 		return nil, err

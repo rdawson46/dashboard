@@ -9,7 +9,11 @@ import { useAuthStore } from '@/stores/auth';
 
 const routes = [
     { path: '/', component: LandingPage },
-    { path: '/login', component: LoginPage },
+    {
+        path: '/login',
+        component: LoginPage,
+        name: "Login"
+    },
     { path: '/register', component: RegisterPage },
     {
         path: '/chat',

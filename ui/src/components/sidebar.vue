@@ -9,7 +9,7 @@ const authStore = useAuthStore();
 
 const history = ref([]);
 
-const collapse = ref(false)
+const collapse = ref(true)
 
 function notify(message) {
     toast(message, {
@@ -87,7 +87,7 @@ onMounted(async () => {
             <div class="logo">
                 <i id="robot" class="fa-solid fa-robot"></i>
                 <h1>Chat</h1>
-                <button class="collapse-button" @click="collapse = !collapse">
+                <button class="glass-card collapse-button" @click="collapse = !collapse">
                     <i class="test fa-solid fa-bars"></i>
                 </button>
             </div>
@@ -133,7 +133,7 @@ onMounted(async () => {
 
     <template v-else>
         <div>
-            <button class="collapse-button" @click="collapse = !collapse">
+            <button class="glass-card collapse-button" @click="collapse = !collapse">
                 <i class="test fa-solid fa-bars"></i>
             </button>
         </div>
@@ -170,6 +170,7 @@ onMounted(async () => {
     margin-right: 0;
     padding: 0.5rem;
     font-size: 1.5rem;
+    background-color: var(--bg-color-light);
 }
 
 .nav-links {

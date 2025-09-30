@@ -12,6 +12,7 @@ import Message from '@/components/Message.vue'
 import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
+const router = useRouter();
 
 const authStore = useAuthStore();
 
@@ -142,7 +143,7 @@ async function query() {
     'messages': apiMessages
   }
 
-  await useStream(body, messageId, apiMessages, chatMessages);
+  await useStream(body, messageId, apiMessages, chatMessages, router);
 }
 
 async function getModelList() {
@@ -150,6 +151,10 @@ async function getModelList() {
     const response = await fetch('/api/modelList', { credentials: 'include' })
 
     if (!response.ok) {
+      if (response.status === 401) {
+        await router.replace('/login')
+        return
+      }
       notify(`Error: ${response.status} ${response.statusText}`);
       return;
     }
@@ -164,7 +169,6 @@ async function getModelList() {
 async function getMessages(id) {
   if (!authStore.username || !authStore.id) {
     notify("Invalid username or id")
-    chatMessages.value.pop();
     return
   }
 
@@ -184,8 +188,13 @@ async function getMessages(id) {
     })
 
     if (!response.ok) {
+      if (response.status === 401) {
+        await router.replace('/login')
+        return
+      }
       notify(`Error: ${response.status} ${response.statusText}`);
-      return;
+      router.push({ name: 'New Chat' })
+      return [];
     }
 
     return await response.json()
@@ -219,9 +228,14 @@ watch(() => route.params.id, async (newId, oldId) => {
         console.log(`setting new ID: ${newId}`)
         messageId.value = newId
         let mess = await getMessages(messageId.value)
-        // apiMessages = mess
-        apiMessages.splice(0, apiMessages.length, ...mess)
-        chatMessages.value = parseLoadedMessages(mess)
+
+        if (mess.length) {
+            // apiMessages = mess
+            apiMessages.splice(0, apiMessages.length, ...mess)
+            chatMessages.value = parseLoadedMessages(mess)
+        } else {
+
+        }
     }
   }
 
@@ -257,7 +271,7 @@ onMounted(async () => {
       </select>
     </div>
 
-    <div v-if="chatMessages.length" class="chat-messages" ref="chatContainer">
+    <div v-if="chatMessages && chatMessages.length" class="chat-messages" ref="chatContainer">
       <template v-for="(message, index) in chatMessages" :key="index">
           <Message v-bind="message"/>
       </template>

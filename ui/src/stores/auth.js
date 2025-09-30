@@ -13,18 +13,24 @@ export const useAuthStore = defineStore('auth', {
 
     actions: {
         async fetchUser() {
-            const res = await fetch('/api/me', { credentials: 'include' })
+            try {
+                const res = await fetch('/api/me', { credentials: 'include' })
 
-            if (!res.ok) {
+                if (!res.ok) {
+                    this.user = null
+                    this.isAuthenticated = false
+                    return
+                }
+
+                const data = await res.json()
+
+                this.user = data
+                this.isAuthenticated = true
+            } catch (e) {
                 this.user = null
                 this.isAuthenticated = false
                 return
             }
-
-            const data = await res.json()
-
-            this.user = data
-            this.isAuthenticated = true
         },
 
         setUser(user) {

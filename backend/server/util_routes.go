@@ -240,7 +240,7 @@ func (s *Server) getChatHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	messages, err := s.db.GetMessage(r.Context(), chatId)
+	messages, err := s.db.GetMessage(r.Context(), userId, chatId)
 
 	if err != nil {
 		s.logger.Error(

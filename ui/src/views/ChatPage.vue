@@ -6,9 +6,7 @@ import Chat from '@/components/Chat.vue'
 <template>
   <div class="chat-page-container">
     <Sidebar />
-    <div class="chat-wrapper">
-      <Chat />
-    </div>
+    <Chat />
   </div>
 </template>
 
@@ -19,12 +17,5 @@ import Chat from '@/components/Chat.vue'
   width: 100vw;
   padding: 1.5rem;
   gap: 1.5rem;
-}
-
-.chat-wrapper {
-  flex: 1;
-  min-width: 0; /* Prevents overflow in flex items */
-  display: grid; /* Use grid to make child fill the space */
-  transition: all 0.2s ease-out;
 }
 </style>

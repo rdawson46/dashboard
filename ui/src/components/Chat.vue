@@ -324,7 +324,6 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  width: 80%;
   padding: 1rem 2rem 0 2rem;
 }
 

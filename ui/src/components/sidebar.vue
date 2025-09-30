@@ -82,8 +82,8 @@ onMounted(async () => {
 </script>
 
 <template>
-    <template v-if="!collapse">
-        <nav class="sidebar glass-card">
+    <Transition name="slide-fade" mode="out-in" appear>
+        <nav v-if="!collapse" class="sidebar glass-card">
             <div class="logo">
                 <i id="robot" class="fa-solid fa-robot"></i>
                 <h1>Chat</h1>
@@ -128,16 +128,12 @@ onMounted(async () => {
             </div>
 
         </nav>
-    </template>
-
-
-    <template v-else>
-        <div>
+        <div v-else>
             <button class="glass-card collapse-button" @click="collapse = !collapse">
                 <i class="test fa-solid fa-bars"></i>
             </button>
         </div>
-    </template>
+    </Transition>
 </template>
 
 <style scoped>
@@ -268,4 +264,14 @@ onMounted(async () => {
     visibility: visible;
 }
 
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.2s ease-out;
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateX(-30px);
+  opacity: 0;
+}
 </style>

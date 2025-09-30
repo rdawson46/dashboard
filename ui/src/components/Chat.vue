@@ -271,15 +271,17 @@ onMounted(async () => {
       </select>
     </div>
 
-    <div v-if="chatMessages && chatMessages.length" class="chat-messages" ref="chatContainer">
-      <template v-for="(message, index) in chatMessages" :key="index">
-          <Message v-bind="message"/>
-      </template>
-    </div>
+    <Transition name="fade" mode="out-in">
+      <div v-if="chatMessages && chatMessages.length" class="chat-messages" ref="chatContainer">
+        <template v-for="(message, index) in chatMessages" :key="index">
+            <Message v-bind="message"/>
+        </template>
+      </div>
 
-    <div class="welcome-container" v-else>
-        <h1>Hello <span class="username">{{authStore.username}}</span>, How can I help you?</h1>
-    </div>
+      <div class="welcome-container" v-else>
+          <h1>Hello <span class="username">{{authStore.username}}</span>, How can I help you?</h1>
+      </div>
+    </Transition>
 
 
     <div class="input-area-main glass-card" :class="{ 'middle': !chatMessages || !chatMessages.length }">
@@ -324,7 +326,8 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 1rem 2rem 0 2rem;
+  padding: 1rem 2rem 120px 2rem;
+  position: relative;
 }
 
 .chat-header {
@@ -444,69 +447,20 @@ onMounted(async () => {
   border-radius: 16px;
 }
 
-/*
-#message-input {
-  flex-grow: 1;
-  border: none;
-  color: var(--text-color);
-  font-size: 1rem;
-  padding: 1rem;
-  resize: none;
-}
-
-#message-input:focus {
-  outline: none;
-}
-
-#send-btn {
-  background: var(--primary-color);
-  border: none;
-  color: white;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-#send-btn:hover {
-  background: var(--primary-color-light);
-}
-
-.input-options {
-  display: flex;
-  gap: 1rem;
-}
-
-.input-options button {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: var(--bg-color-light);
-  color: var(--text-color);
-  border: 1px solid var(--border-color);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.input-options button.active {
-  background: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
-}
-*/
-
 .input-area-main {
-    align-items: left;
-    /*background-color: #2d2d2d;*/
+    position: absolute;
+    bottom: 1rem;
+    left: 12.5%;
+    width: 75%;
     border-radius: 25px;
     padding: 5px 15px;
-    width: 75%;
-    transition: 500ms ease-out;
-    margin: auto;
+    transition: all 500ms ease-out;
+}
+
+.input-area-main.middle {
+  top: 50%;
+  transform: translateY(-50%);
+  bottom: auto;
 }
 
 input-area-sub {
@@ -548,21 +502,6 @@ input-area-sub {
 .input-area-buttons button:last-child {
     margin-left: auto;
 }
-/*
-   buttons from og
-.input-area-buttons {
-    width: 100%;
-    display: flex;
-}
-
-.input-area-buttons button:last-child {
-    margin-left: auto;
-}
-
-.input-area-buttons > button:hover {
-    background-color: var(--bg-color-light);
-}
-*/
 
 #message-input {
     flex-grow: 1;
@@ -597,8 +536,7 @@ input-area-sub {
 }
 
 .welcome-container {
-    margin-top: auto;
-    margin-bottom: auto;
+    padding-top: 20vh;
     justify-content: center;
     display: flex;
 }
@@ -607,6 +545,15 @@ input-area-sub {
     color: var(--primary-color-light);
 }
 
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 </style>
 
 <style>

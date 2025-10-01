@@ -136,7 +136,7 @@ func (s *Server) registerHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server)setUserCookieResponse(user_db db.User_db, r *http.Request, w http.ResponseWriter) {
 	var user User_jwt
-	user.Username = user_db.Name
+	user.Username = user_db.Username
 	user.ID = user_db.ID
 
 	token, err := s.jwt_manager.GenerateToken(&user)

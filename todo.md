@@ -1,8 +1,4 @@
 # Issues
-* better animations
-* switch message ID to uuid
-* UUID for Ids
-    - db rework/tweak
 * model preference
     - storing
     - retrieving

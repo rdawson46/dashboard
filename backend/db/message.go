@@ -5,19 +5,19 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/google/uuid"
 	ollama "github.com/ollama/ollama/api"
 	_ "modernc.org/sqlite"
 )
 
 var getChatbyIdQuery = `SELECT messages FROM messages WHERE id = ? AND user_id = ?`
-var createMessageQuery = `INSERT INTO messages (user_id, messages, description) VALUES (?, ?, ?)`
+var createMessageQuery = `INSERT INTO messages (id, user_id, messages, description) VALUES (?, ?, ?, ?)`
 var getDescriptionsQuery = `SELECT id, description FROM messages WHERE user_id = ? ORDER BY created_at LIMIT ? OFFSET ?`
 var deleteMessageQuery = `DELETE FROM messages WHERE id = ? AND user_id = ?`
 
-
 type Message_db struct {
-    Id int64
-    Messages []ollama.Message
+	Id       string
+	Messages []ollama.Message
 }
 
 // TODO:
@@ -25,18 +25,18 @@ type MessageErrorResponse struct {
 }
 
 type ChatDesc struct {
-	Id int64 `json:"id"`
+	Id          string `json:"id"`
 	Description string `json:"description"`
 }
 
 type Descriptions []*ChatDesc
 
 var (
-    ErrMessageNotFound = errors.New("user not found")
-    ErrInvalidMessage = errors.New("invalid user ID")
+	ErrMessageNotFound = errors.New("user not found")
+	ErrInvalidMessage  = errors.New("invalid user ID")
 )
 
-func (r *sqliteRepo) GetMessage(ctx context.Context, userId, messageId int64) ([]ollama.Message, error) {
+func (r *sqliteRepo) GetMessage(ctx context.Context, userId, messageId string) ([]ollama.Message, error) {
 	var messagesStr string
 	err := r.db.QueryRowContext(ctx, getChatbyIdQuery, messageId, userId).Scan(&messagesStr)
 
@@ -54,44 +54,39 @@ func (r *sqliteRepo) GetMessage(ctx context.Context, userId, messageId int64) ([
 	return messages, nil
 }
 
-func (r *sqliteRepo) GetMessages() () {}
-func (r *sqliteRepo) GetMessageCount() () {}
-func (r *sqliteRepo) UpdateMessage() () {}
+func (r *sqliteRepo) GetMessages()    {}
+func (r *sqliteRepo) GetMessageCount() {}
+func (r *sqliteRepo) UpdateMessage()  {}
 
 // TODO: test this out
-func (r *sqliteRepo) CreateMessage(ctx context.Context, userId int64, messages []ollama.Message) (int64, error) {
+func (r *sqliteRepo) CreateMessage(ctx context.Context, userId string, messages []ollama.Message) (string, error) {
 	/*
-	1. have to generate the description
-	2. insert into db
-	3. messages to string
-	4. return message ID
+		1. have to generate the description
+		2. insert into db
+		3. messages to string
+		4. return message ID
 	*/
 
-	// TEMP: grab first 10 chars of the first user message
-    desc := generateDesc(messages)
+	desc := generateDesc(messages)
 
 	messageString, err := json.Marshal(messages)
 
 	if err != nil {
-		return 0, errors.New("Couldn't marshal messages")
+		return "", errors.New("Couldn't marshal messages")
 	}
 
-	result, err := r.db.Exec(createMessageQuery, userId, string(messageString), desc)
+	messageID := uuid.New().String()
+
+	_, err = r.db.Exec(createMessageQuery, messageID, userId, string(messageString), desc)
 
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	insertedId, err := result.LastInsertId()
-
-	if err != nil {
-		return 0, err
-	}
-
-	return insertedId, nil
+	return messageID, nil
 }
 
-func (r *sqliteRepo) GetDescriptions(ctx context.Context, userId int64, limit, offset int) (Descriptions, error) {
+func (r *sqliteRepo) GetDescriptions(ctx context.Context, userId string, limit, offset int) (Descriptions, error) {
 	rows, err := r.db.QueryContext(ctx, getDescriptionsQuery, userId, limit, offset)
 
 	if err != nil {
@@ -109,7 +104,7 @@ func (r *sqliteRepo) GetDescriptions(ctx context.Context, userId int64, limit, o
 		if err != nil {
 			return nil, err
 		}
-		
+
 		descs = append(descs, &d)
 	}
 
@@ -120,11 +115,11 @@ func (r *sqliteRepo) GetDescriptions(ctx context.Context, userId int64, limit, o
 	return descs, nil
 }
 
-func (r *sqliteRepo) DeleteMessage(ctx context.Context, id int64, user_id int64) (bool, error) {
+func (r *sqliteRepo) DeleteMessage(ctx context.Context, id string, user_id string) (bool, error) {
 	result, err := r.db.Exec(deleteMessageQuery, id, user_id)
 
 	if err != nil {
-        return false, err
+		return false, err
 	}
 
 	i, err := result.RowsAffected()
@@ -136,34 +131,35 @@ func (r *sqliteRepo) DeleteMessage(ctx context.Context, id int64, user_id int64)
 	return true, nil
 }
 
-
 // HACK: returning bool as a temp placeholder
-func (r *sqliteRepo) AddMessage(ctx context.Context, messageId, userId int64, messages []ollama.Message) (bool, error) {
-    /*
-     **kind of a terrible impl**
-    */
+func (r *sqliteRepo) AddMessage(ctx context.Context, messageId, userId string, messages []ollama.Message) (bool, error) {
+	/*
+	 **kind of a terrible impl**
+	*/
 
-    messageString, err := json.Marshal(messages)
+	messageString, err := json.Marshal(messages)
 
-    if err != nil {
-        return false, err
-    }
+	if err != nil {
+		return false, err
+	}
 
-    query := `UPDATE messages SET messages = ? WHERE id = ? AND user_id = ?`
+	query := `UPDATE messages SET messages = ? WHERE id = ? AND user_id = ?`
 
-    result, err := r.db.Exec(query, string(messageString), messageId, userId)
+	result, err := r.db.Exec(query, string(messageString), messageId, userId)
 
-    if err != nil {
-        return false, err
-    }
+	if err != nil {
+		return false, err
+	}
 
-    i, err := result.RowsAffected()
+	i, err := result.RowsAffected()
 
-    if err != nil {
-        return false, err
-    }
+	if err != nil {
+		return false, err
+	}
 
-    if i == 0 { return false, nil }
+	if i == 0 {
+		return false, nil
+	}
 
 	return true, nil
 }
@@ -177,12 +173,12 @@ func generateDesc(message []ollama.Message) string {
 		}
 	}
 
-    var desc string
-    if len(lastQ) >= 10 {
-        desc = lastQ[:10]
-    } else {
-        desc = lastQ
-    }
+	var desc string
+	if len(lastQ) >= 10 {
+		desc = lastQ[:10]
+	} else {
+		desc = lastQ
+	}
 
-    return desc
+	return desc
 }

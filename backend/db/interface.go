@@ -7,7 +7,7 @@ import (
 
 type Repository interface {
     // User 
-    GetUser(ctx context.Context, id int64) (*User_db, error)
+    GetUser(ctx context.Context, id string) (*User_db, error)
     GetUsers(ctx context.Context, limit, offset int64) ([]*User_db, error)
     GetUserCount(ctx context.Context) (int64, error)
 
@@ -17,16 +17,15 @@ type Repository interface {
 
 
     // Messages
-    GetMessage(ctx context.Context, userId, messageId int64) ([]ollama.Message, error)
-    DeleteMessage(ctx context.Context, id int64, user_id int64) (bool, error)
+    GetMessage(ctx context.Context, userId, messageId string) ([]ollama.Message, error)
+    DeleteMessage(ctx context.Context, id string, user_id string) (bool, error)
     GetMessages() ()
     GetMessageCount() ()
 
-    CreateMessage(ctx context.Context, userId int64, message []ollama.Message) (int64, error)
+    CreateMessage(ctx context.Context, userId string, message []ollama.Message) (string, error)
     UpdateMessage() ()
-	AddMessage(ctx context.Context, messageId, userId int64, message []ollama.Message) (bool, error)
+	AddMessage(ctx context.Context, messageId, userId string, message []ollama.Message) (bool, error)
 
-    GetDescriptions(ctx context.Context, userId int64, limit, offset int) (Descriptions, error)
+    GetDescriptions(ctx context.Context, userId string, limit, offset int) (Descriptions, error)
 	Close() error
 }
-

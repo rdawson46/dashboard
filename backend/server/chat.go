@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-    "strconv"
 
 	ollama "github.com/ollama/ollama/api"
 	api "github.com/rdawson46/dashboard/api"
@@ -86,7 +85,7 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
     // check for message id
-    var messageIdString string
+    var messageId string
     if chatReq.MessageId == "" {
         s.logger.Info(
             "Creating new chat for user", 
@@ -107,7 +106,7 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
             return
         }
 
-        messageIdString = strconv.FormatInt(id, 10)
+        messageId = id
 
         s.logger.Info(
             "New Chat ID",
@@ -115,15 +114,7 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
             "Chat Id", id,
         )
     } else {
-        messageIdString = chatReq.MessageId
-    }
-
-    messageId, err := strconv.ParseInt(messageIdString, 10, 64)
-
-    if err != nil {
-        s.logger.Errorf("Invalid id: %s\nError: %s", messageIdString, err.Error())
-        http.Error(w, "Failed to indentify chat", http.StatusInternalServerError)
-        return
+        messageId = chatReq.MessageId
     }
 
 	// headers for SSE
@@ -195,12 +186,13 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		"model", chatReq.Model,
 		"remote", r.RemoteAddr,
 		"user", user.Username,
-		"chatId", messageIdString,
+		"chatId", messageId,
 	)
 
 	go oc.Stream(ctx, chatReq, chatReq.Model, msgChan, errChan)
 
-	token_count := 0
+
+token_count := 0
     chatRespone := ""
 	OuterLoop:
 	for {
@@ -265,7 +257,7 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		"token_count", token_count,
 		"remote", r.RemoteAddr,
 		"user", user.Username,
-		"chatId", messageIdString,
+		"chatId", messageId,
 	)
 
 	fmt.Fprintf(w, "data: %s\n\n", `{"done": true}`)
@@ -299,7 +291,7 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		"Chat successfully updated",
 		"user", user.Username,
         "chat id", messageId,
-		"chatId", messageIdString,
+		"chatId", messageId,
 	)
 }
 

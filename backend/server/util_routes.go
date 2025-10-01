@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-    "strconv"
 	"os"
 
 	api "github.com/rdawson46/dashboard/api"
@@ -118,39 +117,15 @@ func (s *Server) deleteChatHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    userId, err := strconv.ParseInt(delReq.UserId, 10, 64)
-
-    if err != nil {
-        s.logger.Error(
-            "Invalid id",
-            "userId", delReq.UserId,
-            "error", err.Error(),
-        )
-        http.Error(w, "Failed to indentify chat", http.StatusInternalServerError)
-        return
-    }
-
-    if user.ID != userId {
+    if user.ID != delReq.UserId {
         w.WriteHeader(http.StatusUnauthorized)
         json.NewEncoder(w).Encode(map[string]string{"Error": "Invalid username"})
         return
     }
 
-    chatId, err := strconv.ParseInt(delReq.ChatId, 10, 64)
-
-    if err != nil {
-        s.logger.Error(
-            "Invalid id",
-            "userId", delReq.UserId,
-            "error", err.Error(),
-        )
-        http.Error(w, "Failed to indentify chat", http.StatusInternalServerError)
-        return
-    }
-
     w.Header().Set("Content-Type", "application/json")
 
-    ok, err = s.db.DeleteMessage(r.Context(), chatId, userId)
+    ok, err = s.db.DeleteMessage(r.Context(), delReq.ChatId, delReq.UserId)
 
     if err != nil {
         s.logger.Error(
@@ -216,31 +191,15 @@ func (s *Server) getChatHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, err := strconv.ParseInt(getReq.UserId, 10, 64)
-
-    if err != nil {
-        s.logger.Errorf("Invalid id: %s\nError: %s", getReq.UserId, err.Error())
-        http.Error(w, "Failed to indentify chat", http.StatusInternalServerError)
-        return
-    }
-
-	if user.ID != userId {
+	if user.ID != getReq.UserId {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"Error": "Invalid username"})
 		return
 	}
 
-	chatId, err := strconv.ParseInt(getReq.ChatId, 10, 64)
-
-    if err != nil {
-        s.logger.Errorf("Invalid id: %s\nError: %s", getReq.UserId, err.Error())
-        http.Error(w, "Failed to indentify chat", http.StatusInternalServerError)
-        return
-    }
-
 	w.Header().Set("Content-Type", "application/json")
 
-	messages, err := s.db.GetMessage(r.Context(), userId, chatId)
+	messages, err := s.db.GetMessage(r.Context(), getReq.UserId, getReq.ChatId)
 
 	if err != nil {
 		s.logger.Error(

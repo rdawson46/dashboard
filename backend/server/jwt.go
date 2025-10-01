@@ -14,13 +14,13 @@ import (
 // TODO: add logger to jwt
 type User_jwt struct {
     Username string `json:"username"`
-    ID int64 `json:"id"`
+    ID string `json:"id"`
 }
 
 
 type Claims struct {
     Username string `json:"username"`
-	ID int64 `json:"id"`
+	ID string `json:"id"`
     jwt.RegisteredClaims
 }
 
@@ -165,4 +165,3 @@ func (manager *JWTManager) ClearTokenCookie(w http.ResponseWriter) {
 
     http.SetCookie(w, cookie)
 }
-

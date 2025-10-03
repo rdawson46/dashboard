@@ -18,6 +18,9 @@ var getUserCountQuery = `SELECT COUNT(*) FROM users`
 var createUserQuery = `INSERT INTO users (id, username, password) VALUES (?, ?, ?)`
 var signInUserQuery = `SELECT id, username, created_at, password FROM users WHERE username = ?`
 
+var getModelQuery = `SELECT model FROM users WHERE id = ?`
+var setModelQuery = `UPDATE users SET model = ? WHERE id = ?`
+
 // TODO: add logging and make theses tables
 
 type User_db struct {
@@ -144,3 +147,36 @@ func (r *sqliteRepo) SignInUser(ctx context.Context, username, enteredPassword s
 
 	return &user, nil
 }
+
+
+func (r *sqliteRepo) GetPerferredModel(ctx context.Context, userId string) (string, error) {
+	var modelStr string
+	err := r.db.QueryRowContext(ctx, getModelQuery, userId).Scan(&modelStr)
+
+	if err != nil {
+		return "", err
+	}
+
+	return modelStr, nil
+}
+
+func (r *sqliteRepo) SetPerferredModel(ctx context.Context, userId, model string) error {
+	result, err := r.db.Exec(setModelQuery, model, userId)
+
+	if err != nil {
+		return nil
+	}
+
+	i, err := result.RowsAffected()
+
+	if err != nil {
+		return err
+	}
+
+	if i == 0 {
+		return nil
+	}
+
+	return nil
+}
+

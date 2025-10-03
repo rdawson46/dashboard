@@ -181,6 +181,15 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 	msgChan := make(chan any)
 	errChan := make(chan error)
 
+
+	s.logger.Info(
+		"Setting model preference",
+		"model", chatReq.Model,
+		"user", user.Username,
+	)
+
+	s.db.SetPerferredModel(ctx, user.ID, chatReq.Model)
+
 	s.logger.Info(
 		"Starting stream",
 		"model", chatReq.Model,

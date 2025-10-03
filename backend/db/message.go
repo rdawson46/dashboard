@@ -14,6 +14,7 @@ var getChatbyIdQuery = `SELECT messages FROM messages WHERE id = ? AND user_id =
 var createMessageQuery = `INSERT INTO messages (id, user_id, messages, description) VALUES (?, ?, ?, ?)`
 var getDescriptionsQuery = `SELECT id, description FROM messages WHERE user_id = ? ORDER BY created_at LIMIT ? OFFSET ?`
 var deleteMessageQuery = `DELETE FROM messages WHERE id = ? AND user_id = ?`
+var updateMessageQuery = `UPDATE messages SET messages = ? WHERE id = ? AND user_id = ?`
 
 type Message_db struct {
 	Id       string
@@ -143,9 +144,7 @@ func (r *sqliteRepo) AddMessage(ctx context.Context, messageId, userId string, m
 		return false, err
 	}
 
-	query := `UPDATE messages SET messages = ? WHERE id = ? AND user_id = ?`
-
-	result, err := r.db.Exec(query, string(messageString), messageId, userId)
+	result, err := r.db.Exec(updateMessageQuery, string(messageString), messageId, userId)
 
 	if err != nil {
 		return false, err
@@ -162,23 +161,4 @@ func (r *sqliteRepo) AddMessage(ctx context.Context, messageId, userId string, m
 	}
 
 	return true, nil
-}
-
-func generateDesc(message []ollama.Message) string {
-	var lastQ string
-	for _, m := range message {
-		if m.Role == "user" {
-			lastQ = m.Content
-			break
-		}
-	}
-
-	var desc string
-	if len(lastQ) >= 10 {
-		desc = lastQ[:10]
-	} else {
-		desc = lastQ
-	}
-
-	return desc
 }

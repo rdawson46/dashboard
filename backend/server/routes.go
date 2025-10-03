@@ -44,7 +44,7 @@ func addRoutes(h *http.ServeMux, s *Server) {
 	))
 
     h.Handle("/api/stream", s.jwt_manager.AuthMiddleware(s.streamHandler))
-    h.Handle("/api/modelList", s.jwt_manager.AuthMiddleware(modelListHandler))
+    h.Handle("/api/modelList", s.jwt_manager.AuthMiddleware(s.modelListHandler))
     h.Handle("/api/modelInfo", s.jwt_manager.AuthMiddleware(modelShowHandler))
 
 	h.Handle("/api/chatDescription", s.jwt_manager.AuthMiddleware(s.chatDescriptionHandler))

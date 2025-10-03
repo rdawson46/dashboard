@@ -7,13 +7,27 @@ import (
 	"os"
 
 	api "github.com/rdawson46/dashboard/api"
+	ollama "github.com/ollama/ollama/api"
 )
 
-func modelListHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) modelListHandler(w http.ResponseWriter, r *http.Request) {
+	type modelResponse struct {
+		Models []ollama.ListModelResponse `json:"models"`
+		Preference string `json:"preference"`
+	}
+
     if r.Method != http.MethodGet {
         http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
         return
     }
+
+	user, ok := userFromContext(r.Context())
+
+	if !ok {
+        w.WriteHeader(http.StatusInternalServerError)
+        json.NewEncoder(w).Encode(map[string]string{"Error": "User not found"})
+        return
+	}
 
 	url := os.Getenv("OLLAMA_URL")
 	
@@ -38,9 +52,21 @@ func modelListHandler(w http.ResponseWriter, r *http.Request) {
         return 
     }
 
+	modelPreference, err := s.db.GetPerferredModel(ctx, user.ID)
+
+	if err != nil {
+		s.logger.Error("Could not load model preference", "error", err.Error())
+		modelPreference = ""
+	}
+
+	finalRes := modelResponse{
+		Models: resp.Models,
+		Preference: modelPreference,
+	}
+
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(resp.Models)
+    json.NewEncoder(w).Encode(finalRes)
 }
 
 func modelShowHandler(w http.ResponseWriter, r *http.Request) {

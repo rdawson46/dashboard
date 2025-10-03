@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     password TEXT NOT NULL,
+    model TEXT
 );
 
 CREATE TABLE IF NOT EXISTS messages (

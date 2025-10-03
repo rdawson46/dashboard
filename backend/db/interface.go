@@ -15,6 +15,9 @@ type Repository interface {
     SignInUser(ctx context.Context, username, password string) (*User_db, error)
     UpdateUser() ()
 
+	GetPerferredModel(ctx context.Context, userId string) (string, error)
+	SetPerferredModel(ctx context.Context, userId, model string) (error)
+
 
     // Messages
     GetMessage(ctx context.Context, userId, messageId string) ([]ollama.Message, error)

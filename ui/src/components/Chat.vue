@@ -160,7 +160,18 @@ async function getModelList() {
     }
 
     const data = await response.json();
-    modelList.value = data
+    console.log(data)
+    modelList.value = data.models
+
+    if (Array.isArray(data.models)) {
+      const names = data.models.map(i => i.name)
+
+      console.log(names)
+
+      if (names.includes(data.preference)){
+        modelSelector.value = data.preference
+      }
+    }
   } catch (error) {
     console.error(error)
   }
@@ -266,7 +277,7 @@ onMounted(async () => {
   <div class="chat-container">
     <div class="chat-header">
       <h2>Chat</h2>
-      <select name="model" id="modelSelector" ref="modelSelector">
+      <select name="model" id="modelSelector" v-model="modelSelector">
         <option v-for="model in modelList" :value="model.model" :key="model.model">{{ model.name }}</option>
       </select>
     </div>

@@ -256,7 +256,11 @@ token_count := 0
 
 			// HACK: replace error message
 			s.logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+
+			// TODO: superfluous error
+			// http.Error(w, err.Error(), http.StatusInternalServerError)
+			fmt.Fprintf(w, "data: %s\n\n", b)
+			flusher.Flush()
 			return
 		}
 	}

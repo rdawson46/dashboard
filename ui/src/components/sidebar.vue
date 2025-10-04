@@ -4,11 +4,12 @@ import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
 import { useAuthStore } from '@/stores/auth';
 import { RouterLink } from 'vue-router';
+import { useRouter } from 'vue-router';
 
 const authStore = useAuthStore();
+const router = useRouter();
 
 const history = ref([]);
-
 const collapse = ref(true)
 
 function notify(message) {
@@ -21,6 +22,10 @@ function notify(message) {
 async function getHistory() {
   try{
     const res = await fetch('/api/chatDescription', { credentials: 'include' });
+
+    if (!res.ok) { 
+        return
+    }
     const data = await res.json();
     return data;
   } catch (e) {
@@ -71,6 +76,17 @@ async function deleteChat(chatId) {
     }
 }
 
+async function logout() {
+  try {
+    await fetch('/api/logout', )
+    const response = await fetch('/api/logout', { credentials: 'include' })
+
+    await router.push('/')
+  } catch (e) {
+    console.error(e)
+  }
+}
+
 onMounted(async () => {
     try {
       const hist = await getHistory();
@@ -105,8 +121,8 @@ onMounted(async () => {
                 <li><a href="/models"><i class="fa-solid fa-cogs"></i><span>Models</span></a></li>
             </ul>
 
+            <h3 class="history-title">History</h3>
             <div class="history">
-                <h3>History</h3>
 
 
                 <ul>
@@ -121,7 +137,7 @@ onMounted(async () => {
 
             </div>
             <div class="logout">
-                <a href="/api/logout">
+                <a @click="logout()">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     <span>Logout</span>
                 </a>
@@ -197,9 +213,10 @@ onMounted(async () => {
 
 .history {
   flex-grow: 1;
+  overflow-y: auto;
 }
 
-.history h3 {
+.history-title {
   font-size: 1rem;
   font-weight: 500;
   text-transform: uppercase;

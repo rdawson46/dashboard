@@ -134,7 +134,7 @@ async function query() {
   chatMessages.value.push({ role: 'assistant', content: '' });
 
   const body = {
-    'model': modelSelector.value.value,
+    'model': modelSelector.value,
     'webSearch': searchActive.value,
     'code': codeActive.value,
     'username': authStore.username,
@@ -160,18 +160,15 @@ async function getModelList() {
     }
 
     const data = await response.json();
-    console.log(data)
-    modelList.value = data.models
 
-    if (Array.isArray(data.models)) {
-      const names = data.models.map(i => i.name)
-
-      console.log(names)
-
-      if (names.includes(data.preference)){
-        modelSelector.value = data.preference
-      }
+    if (!Array.isArray(data.models) || data.models.length === 0) {
+      throw new Error('No model list')
     }
+
+    modelList.value = data.models
+    const names = data.models.map(i => i.name)
+    modelSelector.value = data.preference || names[0]
+
   } catch (error) {
     console.error(error)
   }
@@ -201,7 +198,7 @@ async function getMessages(id) {
     if (!response.ok) {
       if (response.status === 401) {
         await router.replace('/login')
-        return
+        return [];
       }
       notify(`Error: ${response.status} ${response.statusText}`);
       router.push({ name: 'New Chat' })
@@ -461,8 +458,8 @@ onMounted(async () => {
 .input-area-main {
     position: absolute;
     bottom: 1rem;
-    left: 12.5%;
-    width: 75%;
+    left: 20%;
+    width: 60%;
     border-radius: 25px;
     padding: 5px 15px;
     transition: all 500ms ease-out;

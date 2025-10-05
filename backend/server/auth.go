@@ -11,7 +11,9 @@ import (
 
 func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
 		return
 	}
 
@@ -19,7 +21,9 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 	password := strings.TrimSpace(r.FormValue("password"))
 
 	if username == "" || password == "" {
-		http.Error(w, "Improper values", http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Improper values"})
 		s.logger.Error(
 			"Login failed: field left blank",
 			"path", r.URL.Path,
@@ -31,7 +35,9 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 	user_db, err := s.db.SignInUser(ctx, username, password)
 
 	if err != nil {
-		http.Error(w, "Couldn't login", http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Couldn't login"})
 		s.logger.Error(
 			"Login failed: No user found",
 			"error", err.Error(),
@@ -88,7 +94,9 @@ func (s *Server) verifyHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) registerHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid Method", http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid Method"})
 		return
 	}
 
@@ -97,7 +105,9 @@ func (s *Server) registerHandler(w http.ResponseWriter, r *http.Request) {
 	confirm := strings.TrimSpace(r.FormValue("confirm"))
 
 	if username == "" || password == "" || confirm == "" {
-		http.Error(w, "Improper values", http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Improper values"})
 		s.logger.Error(
 			"User registration failed: field left blank",
 			"path", r.URL.Path,
@@ -106,7 +116,9 @@ func (s *Server) registerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if password != confirm {
-		http.Error(w, "password and confirmation do not match", http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "password and confirmation do not match"})
 		s.logger.Error(
 			"User registration failed: password != confirmation",
 			"path", r.URL.Path,
@@ -121,7 +133,9 @@ func (s *Server) registerHandler(w http.ResponseWriter, r *http.Request) {
 	user_db, err := s.db.CreateUser(r.Context(), username, password)
 
 	if err != nil {
-		http.Error(w, "Failed to create user", http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to create user"})
 		s.logger.Error(
 			"User registration failed: Failed to create in db",
 			"error", err.Error(),

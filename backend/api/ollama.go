@@ -49,7 +49,7 @@ func getCodeExecution() api.Tool {
 		Type: "string",
 		Function: api.ToolFunction {
 			Name: "python code execution",
-			Description: "execute python code dynamically, make sure to print all results to view them",
+			Description: "Execute python code in a sandboxed environment. You can use this tool to perform calculations, manipulate strings, and other simple tasks. Make sure to print all results to view them. For example, to add two numbers, you can write: `print(1 + 2)`.",
 			Parameters: struct{Type string "json:\"type\""; Defs any "json:\"$defs,omitempty\""; Items any "json:\"items,omitempty\""; Required []string "json:\"required\""; Properties map[string]struct{Type api.PropertyType "json:\"type\""; Items any "json:\"items,omitempty\""; Description string "json:\"description\""; Enum []any "json:\"enum,omitempty\""} "json:\"properties\""}{
 				Type: "object",
 				Properties: map[string]struct{Type api.PropertyType "json:\"type\""; Items any "json:\"items,omitempty\""; Description string "json:\"description\""; Enum []any "json:\"enum,omitempty\""}{
@@ -119,7 +119,7 @@ func (oc OllamaClient) newRequestWithMessages(messages []api.Message, model stri
             "top_p": 0.9,
         },
         Stream: &[]bool{stream}[0],
-		Think: &[]bool{false}[0],
+        Think: &[]bool{false}[0],
     }
 }
 

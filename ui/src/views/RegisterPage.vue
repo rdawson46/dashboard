@@ -80,7 +80,8 @@ const register = async () => {
     )
 
     if (!res.ok) {
-      notify(`Error occured`)
+      const data = await res.json()
+      notify(data.error)
       return
     }
 

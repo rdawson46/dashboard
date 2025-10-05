@@ -11,6 +11,7 @@ const router = useRouter();
 
 const history = ref([]);
 const collapse = ref(true)
+const deletingChatId = ref(null);
 
 function notify(message) {
     toast(message, {
@@ -38,6 +39,8 @@ async function deleteChat(chatId) {
     if (!authStore.id) {
       notify('No user id')
     }
+
+    deletingChatId.value = chatId;
 
     const body = {
       'userId': authStore.id.toString(),
@@ -73,6 +76,8 @@ async function deleteChat(chatId) {
     } catch (e) {
       console.error('Error parsing JSON:', e);
       notify('Error processing server response.');
+    } finally {
+      deletingChatId.value = null;
     }
 }
 
@@ -130,7 +135,8 @@ onMounted(async () => {
                         <RouterLink :to="{ name: 'Existing Chat', params: { id: h.id } }" class="history-link">
                         {{ h.description }}
                         </RouterLink>
-                        <i class="fa-solid fa-trash space" @click="deleteChat(h.id)"></i>
+                        <i v-if="deletingChatId === h.id" class="fa-solid fa-spinner fa-spin space"></i>
+                        <i v-else class="fa-solid fa-trash space" @click="deleteChat(h.id)"></i>
                     </li>
                 </ul>
 
@@ -247,6 +253,23 @@ onMounted(async () => {
 .history ul li:hover {
   opacity: 1;
   background-color: rgba(255, 255, 255, 0.05);
+}
+
+.history::-webkit-scrollbar {
+  width: 8px;
+}
+
+.history::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.history::-webkit-scrollbar-thumb {
+  background: #4f4f4f;
+  border-radius: 4px;
+}
+
+.history::-webkit-scrollbar-thumb:hover {
+  background: #6f6f6f;
 }
 
 .logout a {

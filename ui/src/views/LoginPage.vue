@@ -46,7 +46,8 @@ const login = async () => {
     )
 
     if (!res.ok) {
-      notify("Error occured while logging in")
+      const data = await res.json()
+      notify(data.error)
       console.log(res)
       return
     }

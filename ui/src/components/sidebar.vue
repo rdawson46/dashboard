@@ -118,12 +118,18 @@ onMounted(async () => {
                 -->
                 <li>
                     <RouterLink :to="{ name: 'New Chat' }" class="active">
-                    <i class="fa-solid fa-comments"></i><span>Chat</span>
+                    <i class="fa-solid fa-comments"></i><span>New Chat</span>
                     </RouterLink>
                 </li>
 
                 <li><a href="#"><i class="fa-solid fa-user"></i><span>Profile</span></a></li>
                 <li><a href="/models"><i class="fa-solid fa-cogs"></i><span>Models</span></a></li>
+                <li>
+                    <RouterLink :to="{ name: 'jobs' }" class="active">
+                        <i class="fa-solid fa-clock"></i>
+                        <span>Jobs</span>
+                    </RouterLink>
+                </li>
             </ul>
 
             <h3 class="history-title">History</h3>

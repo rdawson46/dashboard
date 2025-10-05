@@ -1,9 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import LandingPage from '../views/LandingPage.vue'
-import LoginPage from '../views/LoginPage.vue'
-import RegisterPage from '../views/RegisterPage.vue'
-import ChatPage from '../views/ChatPage.vue'
-import NotFoundPage from '../views/NotFoundPage.vue'
+import LandingPage from '@/views/LandingPage.vue'
+import LoginPage from '@/views/LoginPage.vue'
+import RegisterPage from '@/views/RegisterPage.vue'
+import ChatPage from '@/views/ChatPage.vue'
+import NotFoundPage from '@/views/NotFoundPage.vue'
+import JobPage from '@/views/JobPage.vue'
 
 import { useAuthStore } from '@/stores/auth';
 
@@ -19,6 +20,12 @@ const routes = [
         path: '/chat',
         component: ChatPage,
         name: "New Chat",
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/jobs',
+        component: JobPage,
+        name: "jobs",
         meta: { requiresAuth: true }
     },
     {

@@ -39,5 +39,10 @@ type UserDB interface {
 }
 
 type JobDB interface {
+	CreateJob() ()
+	UpdateJob() ()
+	GetJob() ()
 
+	Peek() ()
+	Run() ()
 }

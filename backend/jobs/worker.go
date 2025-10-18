@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-func StartWorkerPool(ctx context.Context, jobs <-chan Job, count int) {
+func StartWorkerPool(ctx context.Context, jobs <-chan *Job, count int) {
 	var wg sync.WaitGroup
 	for i := range count {
 		wg.Add(1)

@@ -12,7 +12,7 @@ func FindReadyJobs(db *sql.DB) (Jobs, error) {
 }
 
 
-func StartScheduler(ctx context.Context, db *sql.DB, jobs chan<- Job) {
+func StartScheduler(ctx context.Context, db *sql.DB, jobs chan<- *Job) {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 

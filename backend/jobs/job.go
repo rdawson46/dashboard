@@ -24,7 +24,7 @@ type Job struct {
 	Status string `json:"status"`
 }
 
-type Jobs []Job
+type Jobs []*Job
 
 func handleLlmTask(task Task) string {
 	return ""

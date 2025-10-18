@@ -1,7 +1,8 @@
 # To Do
 * sidebar active class
-* job page
 * job registration
+* input to seperate component
+* job page
 * notification/background job style
 * queue system for async tasks
     - tool execution

@@ -39,10 +39,10 @@ type UserDB interface {
 }
 
 type JobDB interface {
-	CreateJob() ()
-	UpdateJob() ()
-	GetJob() ()
+	CreateJob(ctx context.Context) ()
+	UpdateJob(ctx context.Context) ()
+	GetJob(ctx context.Context) ()
 
-	Peek() ()
-	Run() ()
+	Peek(ctx context.Context) ()
+	Run(ctx context.Context) ()
 }

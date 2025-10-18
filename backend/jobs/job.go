@@ -20,7 +20,7 @@ type Job struct {
 	Freq   string `json:"freq,omitempty"`
 	Tasks  []Task `json:"tasks"` 
 	Model  string `json:"model"`
-	Id	   string `json:"id"`
+	Id	   string `json:"id,omitempty"`
 	Status string `json:"status"`
 }
 

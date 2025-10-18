@@ -2,6 +2,7 @@ package db
 
 import (
     "context"
+	jobs "github.com/rdawson46/dashboard/jobs"
 	ollama "github.com/ollama/ollama/api"
 )
 
@@ -39,10 +40,10 @@ type UserDB interface {
 }
 
 type JobDB interface {
-	CreateJob(ctx context.Context) ()
-	UpdateJob(ctx context.Context) ()
-	GetJob(ctx context.Context) ()
-
-	Peek(ctx context.Context) ()
-	Run(ctx context.Context) ()
+    CreateJob(ctx context.Context, userId string, job jobs.Job) (*jobs.Job, error)
+    GetJob(ctx context.Context, jobId string, userId string) (*jobs.Job, error)
+    GetJobs(ctx context.Context, userId string, limit, offset int) ([]*jobs.Job, error)
+    UpdateJob(ctx context.Context, job jobs.Job) (*jobs.Job, error)
+    DeleteJob(ctx context.Context, jobId string, userId string) error
+    Peek(ctx context.Context) (*jobs.Job, error)
 }

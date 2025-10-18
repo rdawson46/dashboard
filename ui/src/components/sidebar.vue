@@ -174,7 +174,7 @@ onMounted(async () => {
 .logo {
   display: flex;
   align-items: center;
-  margin-bottom: 3rem;
+  margin-bottom: 1rem;
 }
 
 .logo #robot {

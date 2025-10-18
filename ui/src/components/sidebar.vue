@@ -10,7 +10,7 @@ const authStore = useAuthStore();
 const router = useRouter();
 
 const history = ref([]);
-const collapse = ref(true)
+const collapse = ref(false)
 const deletingChatId = ref(null);
 
 function notify(message) {

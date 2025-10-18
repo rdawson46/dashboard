@@ -38,11 +38,7 @@ type Server struct {
 	jwt_manager *JWTManager
 }
 
-func NewServer(config ServerConfig, db db.Repository) *Server {
-    logger := log.NewWithOptions(os.Stderr, log.Options{
-        ReportCaller: true,
-    })
-
+func NewServer(config ServerConfig, db db.Repository, logger *log.Logger) *Server {
     jwt_manager := NewJWTManager(
 		os.Getenv("JWT_KEY"),
         time.Minute*30,
@@ -50,7 +46,7 @@ func NewServer(config ServerConfig, db db.Repository) *Server {
 
     return &Server{
         config: config,
-        logger: logger, 
+        logger: logger.WithPrefix(""), 
 		db: db,
         rateLimiter: rate.NewLimiter(
             rate.Limit(config.RateLimitReq),

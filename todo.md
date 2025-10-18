@@ -2,6 +2,7 @@
 * sidebar active class
 * job registration
 * input to seperate component
+* auth issue after creating new account
 * job page
 * notification/background job style
 * queue system for async tasks

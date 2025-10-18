@@ -12,16 +12,15 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var getUserQuery = `SELECT id, username, created_at FROM users WHERE id = ?`
-var getUsersQuery = `SELECT id, username, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?`
-var getUserCountQuery = `SELECT COUNT(*) FROM users`
-var createUserQuery = `INSERT INTO users (id, username, password) VALUES (?, ?, ?)`
-var signInUserQuery = `SELECT id, username, created_at, password FROM users WHERE username = ?`
-
-var getModelQuery = `SELECT model FROM users WHERE id = ?`
-var setModelQuery = `UPDATE users SET model = ? WHERE id = ?`
-
-// TODO: add logging and make theses tables
+var (
+	getUserQuery = `SELECT id, username, created_at FROM users WHERE id = ?`
+	getUsersQuery = `SELECT id, username, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?`
+	getUserCountQuery = `SELECT COUNT(*) FROM users`
+	createUserQuery = `INSERT INTO users (id, username, password) VALUES (?, ?, ?)`
+	signInUserQuery = `SELECT id, username, created_at, password FROM users WHERE username = ?`
+	getModelQuery = `SELECT model FROM users WHERE id = ?`
+	setModelQuery = `UPDATE users SET model = ? WHERE id = ?`
+)
 
 type User_db struct {
 	ID        string    `json:"id"`
@@ -29,7 +28,6 @@ type User_db struct {
 	CreatedAt time.Time `json:"createdAt"`
 }
 
-// HACK: can most likely remove this, can keep for logging
 type UserErrorResponse struct {
 	Error   string `json:"error"`
 	Code    string `json:"code,omitempty"`
@@ -42,11 +40,13 @@ var (
 )
 
 func (r *sqliteRepo) GetUser(ctx context.Context, id string) (*User_db, error) {
+	r.logger.Info("Fetching user", "userId", id)
 	row := r.db.QueryRowContext(ctx, getUserQuery, id)
 
 	var user User_db
 	err := row.Scan(&user.ID, &user.Username, &user.CreatedAt)
 	if err != nil {
+		r.logger.Error("failed to get user", "userId", id)
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrUserNotFound
 		}
@@ -57,9 +57,11 @@ func (r *sqliteRepo) GetUser(ctx context.Context, id string) (*User_db, error) {
 }
 
 func (r *sqliteRepo) GetUsers(ctx context.Context, limit, offset int64) ([]*User_db, error) {
+	r.logger.Info("Fetching users", "limit", limit, "offset", offset)
 	rows, err := r.db.QueryContext(ctx, getUsersQuery, limit, offset)
 
 	if err != nil {
+		r.logger.Error("failed to query users", "limit", limit, "offset", offset)
 		return nil, err
 	}
 	defer rows.Close()
@@ -70,6 +72,7 @@ func (r *sqliteRepo) GetUsers(ctx context.Context, limit, offset int64) ([]*User
 		err := rows.Scan(&user.ID, &user.Username, &user.CreatedAt)
 
 		if err != nil {
+			r.logger.Error("failed to scan user")
 			return nil, fmt.Errorf("failed to scan user: %w", err)
 		}
 
@@ -77,6 +80,7 @@ func (r *sqliteRepo) GetUsers(ctx context.Context, limit, offset int64) ([]*User
 	}
 
 	if err := rows.Err(); err != nil {
+		r.logger.Error("error iterating rows")
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
@@ -84,10 +88,12 @@ func (r *sqliteRepo) GetUsers(ctx context.Context, limit, offset int64) ([]*User
 }
 
 func (r *sqliteRepo) GetUserCount(ctx context.Context) (int64, error) {
+	r.logger.Info("Getting user count")
 	var count int64
 	err := r.db.QueryRowContext(ctx, getUserCountQuery).Scan(&count)
 
 	if err != nil {
+		r.logger.Error("failed to count users")
 		return 0, fmt.Errorf("failed to count users: %w", err)
 	}
 
@@ -95,13 +101,16 @@ func (r *sqliteRepo) GetUserCount(ctx context.Context) (int64, error) {
 }
 
 func (r *sqliteRepo) CreateUser(ctx context.Context, username, password string) (*User_db, error) {
+	r.logger.Info("Creating user", "username", username)
 	if !checkPassword(password) {
+		r.logger.Error("invalid password")
 		return nil, errors.New("Invalid password")
 	}
 
 	hashedPass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	if err != nil {
+		r.logger.Error("failed to hash password")
 		return nil, err
 	}
 
@@ -110,6 +119,7 @@ func (r *sqliteRepo) CreateUser(ctx context.Context, username, password string) 
 	_, err = r.db.Exec(createUserQuery, userID, username, hashedPass)
 
 	if err != nil {
+		r.logger.Error("failed to create user", "userId", userID, "username", username)
 		return nil, err
 	}
 
@@ -117,16 +127,17 @@ func (r *sqliteRepo) CreateUser(ctx context.Context, username, password string) 
 	err = r.db.QueryRowContext(ctx, getUserQuery, userID).Scan(&insertedUser.ID, &insertedUser.Username, &insertedUser.CreatedAt)
 
 	if err != nil {
+		r.logger.Error("failed to fetch created user", "userId", userID, "username", username)
 		return nil, err
 	}
 
 	return &insertedUser, nil
 }
 
-// TODO:
 func (r *sqliteRepo) UpdateUser() () {}
 
 func (r *sqliteRepo) SignInUser(ctx context.Context, username, enteredPassword string) (*User_db, error) {
+	r.logger.Info("Signing in user", "username", username)
 	row := r.db.QueryRowContext(ctx, signInUserQuery, username)
 
 	var user User_db
@@ -134,14 +145,17 @@ func (r *sqliteRepo) SignInUser(ctx context.Context, username, enteredPassword s
 	err := row.Scan(&user.ID, &user.Username, &user.CreatedAt, &hashedPass)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			r.logger.Error("user not found", "username", username)
 			return nil, ErrUserNotFound
 		}
+		r.logger.Error("failed to scan user", "username", username)
 		return nil, fmt.Errorf("failed to scan user: %w", err)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPass), []byte(enteredPassword))
 
 	if err != nil {
+		r.logger.Error("incorrect password", "username", username)
 		return nil, fmt.Errorf("Incorrect Password")
 	}
 
@@ -150,10 +164,12 @@ func (r *sqliteRepo) SignInUser(ctx context.Context, username, enteredPassword s
 
 
 func (r *sqliteRepo) GetPerferredModel(ctx context.Context, userId string) (string, error) {
+	r.logger.Info("Getting preferred model", "userId", userId)
 	var modelStr string
 	err := r.db.QueryRowContext(ctx, getModelQuery, userId).Scan(&modelStr)
 
 	if err != nil {
+		r.logger.Error("failed to get preferred model", "userId", userId)
 		return "", err
 	}
 
@@ -161,15 +177,18 @@ func (r *sqliteRepo) GetPerferredModel(ctx context.Context, userId string) (stri
 }
 
 func (r *sqliteRepo) SetPerferredModel(ctx context.Context, userId, model string) error {
+	r.logger.Info("Setting preferred model", "userId", userId, "model", model)
 	result, err := r.db.Exec(setModelQuery, model, userId)
 
 	if err != nil {
+		r.logger.Error("failed to set preferred model", "userId", userId, "model", model)
 		return nil
 	}
 
 	i, err := result.RowsAffected()
 
 	if err != nil {
+		r.logger.Error("failed to get rows affected", "userId", userId, "model", model)
 		return err
 	}
 

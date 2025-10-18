@@ -1,25 +1,27 @@
 package db
 
 import (
-    "database/sql"
-    "errors"
+	"database/sql"
+	"errors"
+	"fmt"
 	"os"
-    "fmt"
 
-    "github.com/golang-migrate/migrate/v4"
-    _ "github.com/golang-migrate/migrate/v4/database/sqlite"
-    _ "github.com/golang-migrate/migrate/v4/source/file"
-    _ "modernc.org/sqlite"
+	"github.com/charmbracelet/log"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "modernc.org/sqlite"
 )
 
 var ErrDatabaseError = errors.New("database error")
 
 type sqliteRepo struct {
     db *sql.DB
+	logger *log.Logger
 }
 
-// TODO: run the db migrations on start up
-func NewSqliteRepository() (Repository, error) {
+func NewSqliteRepository(log *log.Logger) (Repository, error) {
+	l := log.WithPrefix("")
 	db_url := os.Getenv("DB_URL")
 
 	if db_url == "" {
@@ -46,9 +48,15 @@ func NewSqliteRepository() (Repository, error) {
 		return nil, err
     }
 
-    return &sqliteRepo{db: db}, nil
+	l.Info("DB initiated")
+
+    return &sqliteRepo{
+		db: db,
+		logger: l,
+	}, nil
 }
 
 func (r *sqliteRepo) Close() error {
+	r.logger.Info("Closing DB")
 	return r.db.Close()
 }

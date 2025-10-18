@@ -1,11 +1,11 @@
 package main
 
 import (
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/charmbracelet/log"
 	"github.com/joho/godotenv"
 	"github.com/rdawson46/dashboard/server"
 	"github.com/rdawson46/dashboard/db"
@@ -13,7 +13,11 @@ import (
 
 // TODO: need to run migrations on startup
 func run() error {
-	db, err := db.NewSqliteRepository()
+    logger := log.NewWithOptions(os.Stderr, log.Options{
+        ReportCaller: true,
+    })
+
+	db, err := db.NewSqliteRepository(logger)
 
 	if err != nil {
 		return err
@@ -22,7 +26,7 @@ func run() error {
 	defer db.Close()
 
     config := server.NewConfig(8000, 300, 100, 100)
-    s := server.NewServer(config, db)
+    s := server.NewServer(config, db, logger)
 
     if err := s.Start(); err != nil {
         log.Fatal(err)

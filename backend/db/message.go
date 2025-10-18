@@ -10,11 +10,13 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var getChatbyIdQuery = `SELECT messages FROM messages WHERE id = ? AND user_id = ?`
-var createMessageQuery = `INSERT INTO messages (id, user_id, messages, description) VALUES (?, ?, ?, ?)`
-var getDescriptionsQuery = `SELECT id, description FROM messages WHERE user_id = ? ORDER BY created_at LIMIT ? OFFSET ?`
-var deleteMessageQuery = `DELETE FROM messages WHERE id = ? AND user_id = ?`
-var updateMessageQuery = `UPDATE messages SET messages = ? WHERE id = ? AND user_id = ?`
+var (
+	getChatbyIdQuery = `SELECT messages FROM messages WHERE id = ? AND user_id = ?`
+	createMessageQuery = `INSERT INTO messages (id, user_id, messages, description) VALUES (?, ?, ?, ?)`
+	getDescriptionsQuery = `SELECT id, description FROM messages WHERE user_id = ? ORDER BY created_at LIMIT ? OFFSET ?`
+	deleteMessageQuery = `DELETE FROM messages WHERE id = ? AND user_id = ?`
+	updateMessageQuery = `UPDATE messages SET messages = ? WHERE id = ? AND user_id = ?`
+)
 
 type Message_db struct {
 	Id       string
@@ -39,9 +41,11 @@ var (
 
 func (r *sqliteRepo) GetMessage(ctx context.Context, userId, messageId string) ([]ollama.Message, error) {
 	var messagesStr string
+	r.logger.Info("Fetching message", "messageId", messageId, "userId", userId)
 	err := r.db.QueryRowContext(ctx, getChatbyIdQuery, messageId, userId).Scan(&messagesStr)
 
 	if err != nil {
+		r.logger.Error("Error fetching message", "messageId", messageId, "userId", userId)
 		return nil, err
 	}
 
@@ -59,20 +63,15 @@ func (r *sqliteRepo) GetMessages()    {}
 func (r *sqliteRepo) GetMessageCount() {}
 func (r *sqliteRepo) UpdateMessage()  {}
 
-// TODO: test this out
 func (r *sqliteRepo) CreateMessage(ctx context.Context, userId string, messages []ollama.Message) (string, error) {
-	/*
-		1. have to generate the description
-		2. insert into db
-		3. messages to string
-		4. return message ID
-	*/
+	r.logger.Info("Creating message", "userId", userId)
 
 	desc := generateDesc(messages)
 
 	messageString, err := json.Marshal(messages)
 
 	if err != nil {
+		r.logger.Error("failed to marshal messages", "userId", userId)
 		return "", errors.New("Couldn't marshal messages")
 	}
 
@@ -81,6 +80,7 @@ func (r *sqliteRepo) CreateMessage(ctx context.Context, userId string, messages 
 	_, err = r.db.Exec(createMessageQuery, messageID, userId, string(messageString), desc)
 
 	if err != nil {
+		r.logger.Error("failed to create message", "messageId", messageID, "userId", userId)
 		return "", err
 	}
 
@@ -88,9 +88,11 @@ func (r *sqliteRepo) CreateMessage(ctx context.Context, userId string, messages 
 }
 
 func (r *sqliteRepo) GetDescriptions(ctx context.Context, userId string, limit, offset int) (Descriptions, error) {
+	r.logger.Info("Fetching descriptions", "userId", userId, "limit", limit, "offset", offset)
 	rows, err := r.db.QueryContext(ctx, getDescriptionsQuery, userId, limit, offset)
 
 	if err != nil {
+		r.logger.Error("failed to query descriptions", "userId", userId, "limit", limit, "offset", offset)
 		return nil, err
 	}
 
@@ -103,6 +105,7 @@ func (r *sqliteRepo) GetDescriptions(ctx context.Context, userId string, limit, 
 		err := rows.Scan(&d.Id, &d.Description)
 
 		if err != nil {
+			r.logger.Error("failed to scan description", "userId", userId)
 			return nil, err
 		}
 
@@ -110,6 +113,7 @@ func (r *sqliteRepo) GetDescriptions(ctx context.Context, userId string, limit, 
 	}
 
 	if err := rows.Err(); err != nil {
+		r.logger.Error("error iterating rows", "userId", userId)
 		return nil, err
 	}
 
@@ -117,9 +121,11 @@ func (r *sqliteRepo) GetDescriptions(ctx context.Context, userId string, limit, 
 }
 
 func (r *sqliteRepo) DeleteMessage(ctx context.Context, id string, user_id string) (bool, error) {
+	r.logger.Info("Deleting message", "messageId", id, "userId", user_id)
 	result, err := r.db.Exec(deleteMessageQuery, id, user_id)
 
 	if err != nil {
+		r.logger.Error("failed to delete message", "messageId", id, "userId", user_id)
 		return false, err
 	}
 
@@ -132,8 +138,8 @@ func (r *sqliteRepo) DeleteMessage(ctx context.Context, id string, user_id strin
 	return true, nil
 }
 
-// HACK: returning bool as a temp placeholder
 func (r *sqliteRepo) AddMessage(ctx context.Context, messageId, userId string, messages []ollama.Message) (bool, error) {
+	r.logger.Info("Adding message", "messageId", messageId, "userId", userId)
 	/*
 	 **kind of a terrible impl**
 	*/
@@ -141,12 +147,14 @@ func (r *sqliteRepo) AddMessage(ctx context.Context, messageId, userId string, m
 	messageString, err := json.Marshal(messages)
 
 	if err != nil {
+		r.logger.Error("failed to marshal messages", "messageId", messageId, "userId", userId)
 		return false, err
 	}
 
 	result, err := r.db.Exec(updateMessageQuery, string(messageString), messageId, userId)
 
 	if err != nil {
+		r.logger.Error("failed to update message", "messageId", messageId, "userId", userId)
 		return false, err
 	}
 

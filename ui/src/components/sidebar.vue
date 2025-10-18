@@ -113,19 +113,17 @@ onMounted(async () => {
                 </button>
             </div>
             <ul class="nav-links">
-                <!-- 
-                    <li><a href="#" class="active"><i class="fa-solid fa-comments"></i><span>Chat</span></a></li>
-                -->
                 <li>
-                    <RouterLink :to="{ name: 'New Chat' }" class="active">
+                    <RouterLink :to="{ name: 'New Chat' }" :class="{ 'active': false }">
                     <i class="fa-solid fa-comments"></i><span>New Chat</span>
                     </RouterLink>
                 </li>
 
                 <li><a href="#"><i class="fa-solid fa-user"></i><span>Profile</span></a></li>
                 <li><a href="/models"><i class="fa-solid fa-cogs"></i><span>Models</span></a></li>
+
                 <li>
-                    <RouterLink :to="{ name: 'jobs' }" class="active">
+                    <RouterLink :to="{ name: 'jobs' }" :class="{ 'active': false }">
                         <i class="fa-solid fa-clock"></i>
                         <span>Jobs</span>
                     </RouterLink>
@@ -169,6 +167,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   width: 280px;
+  min-width: 280px;
   padding: 2rem;
 }
 

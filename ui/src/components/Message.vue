@@ -51,12 +51,6 @@
 </template>
 
 <style scoped>
-.chat-messages {
-  flex-grow: 1;
-  overflow-y: auto;
-  padding-right: 1rem; /* for scrollbar */
-}
-
 .tool-call, .tool-result {
     padding: 1rem;
 }
@@ -149,5 +143,13 @@ pre {
 code {
   font-family: 'Fira Code', monospace;
   border-radius: 10px;
+}
+
+.message ul {
+    padding-left: 1rem;
+}
+
+.message ol {
+    padding-left: 1rem;
 }
 </style>

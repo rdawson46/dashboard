@@ -1,5 +1,34 @@
 <script setup>
 import Sidebar from '@/components/sidebar.vue'
+import { ref } from 'vue';
+
+const jobs = ref([
+    {
+        Name: "News Update",
+        Type: "LLM",
+        Status: "Running",
+        Date: "2025-10-17",
+    },
+    {
+        Name: "Health Check",
+        Type: "Tool",
+        Status: "Pending",
+        Date: "2025-10-15",
+    },
+    {
+        Name: "Daily Summary",
+        Type: "LLM",
+        Status: "Completed",
+        Date: "2025-10-10",
+    },
+    {
+        Name: "Internet Search",
+        Type: "Tool",
+        Status: "Failed",
+        Date: "2025-10-05",
+    }
+])
+
 </script>
 
 <template>
@@ -25,46 +54,18 @@ import Sidebar from '@/components/sidebar.vue'
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>News Update</td>
-                            <td>LLM</td>
-                            <td><span class="status status-running">Running</span></td>
-                            <td>2025-10-17</td>
-                            <td class="action-buttons">
-                                <button class="action-btn"><i class="fa-solid fa-pencil"></i></button>
-                                <button class="action-btn delete-btn"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Health Check</td>
-                            <td>Tool</td>
-                            <td><span class="status status-pending">Pending</span></td>
-                            <td>2025-10-15</td>
-                            <td class="action-buttons">
-                                <button class="action-btn"><i class="fa-solid fa-pencil"></i></button>
-                                <button class="action-btn delete-btn"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Daily Summary</td>
-                            <td>LLM</td>
-                            <td><span class="status status-completed">Completed</span></td>
-                            <td>2025-10-10</td>
-                            <td class="action-buttons">
-                                <button class="action-btn"><i class="fa-solid fa-pencil"></i></button>
-                                <button class="action-btn delete-btn"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Internet Search</td>
-                            <td>Tool</td>
-                            <td><span class="status status-failed">Failed</span></td>
-                            <td>2025-10-05</td>
-                            <td class="action-buttons">
-                                <button class="action-btn"><i class="fa-solid fa-pencil"></i></button>
-                                <button class="action-btn delete-btn"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>
+                        <template v-for="job in jobs">
+                            <tr>
+                                <td>{{job.Name}}</td>
+                                <td>{{job.Type}}</td>
+                                <td><span class="status" :class="[`status-${job.Status.toLowerCase()}`]">{{job.Status}}</span></td>
+                                <td>{{job.Date}}</td>
+                                <td class="action-buttons">
+                                    <button class="action-btn"><i class="fa-solid fa-pencil"></i></button>
+                                    <button class="action-btn delete-btn"><i class="fa-solid fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        </template>
                     </tbody>
                 </table>
             </div>

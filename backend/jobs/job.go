@@ -14,6 +14,24 @@ type Task struct {
 	Params map[string]string `json:"parameters,omitempty"`
 }
 
+type Status string
+
+const (
+	StatusRunning Status = "Running"
+	StatusPending Status = "Pending"
+	StatusCompleted Status = "Completed"
+	StatusFailed Status = "Failed"
+)
+
+func (s Status) isValidStatus() bool {
+	switch s {
+	case StatusRunning, StatusPending, StatusCompleted, StatusFailed:
+		return true
+	default:
+		return false
+	}
+}
+
 type Job struct {
 	Result []string `json:"result"`
 	Time   string `json:"time,omitempty"`
@@ -21,7 +39,7 @@ type Job struct {
 	Tasks  []Task `json:"tasks"` 
 	Model  string `json:"model"`
 	Id	   string `json:"id,omitempty"`
-	Status string `json:"status"`
+	Status Status `json:"status"`
 }
 
 type Jobs []*Job

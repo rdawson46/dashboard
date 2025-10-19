@@ -327,8 +327,6 @@ func (s *Server) chatDescriptionHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-
-	// TEMP: placeholder until db is set up
 	s.logger.Info(
 		"Pulling user history",
 		"userId", user.ID,

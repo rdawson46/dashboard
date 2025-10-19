@@ -1,33 +1,66 @@
 <script setup>
 import Sidebar from '@/components/sidebar.vue'
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 
-const jobs = ref([
-    {
-        Name: "News Update",
-        Type: "LLM",
-        Status: "Running",
-        Date: "2025-10-17",
-    },
-    {
-        Name: "Health Check",
-        Type: "Tool",
-        Status: "Pending",
-        Date: "2025-10-15",
-    },
-    {
-        Name: "Daily Summary",
-        Type: "LLM",
-        Status: "Completed",
-        Date: "2025-10-10",
-    },
-    {
-        Name: "Internet Search",
-        Type: "Tool",
-        Status: "Failed",
-        Date: "2025-10-05",
+const router = useRouter();
+
+const jobs = ref([])
+const limit = ref(10)
+const offset = ref(0)
+const loading = ref(true)
+
+function deleteJob(id) {
+    console.log(`Delete ${id}`)
+}
+
+function notify(message) {
+  toast(message, {
+    autoClose: 1000,
+    theme: 'dark',
+  });
+}
+
+async function getJobList() {
+    const params = new URLSearchParams()
+    params.append('limit', limit.value)
+    params.append('offset', offset.value)
+
+    const url = `/api/jobList?${params}`
+
+    try {
+        const response = await fetch(url, { credentials: 'include' })
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            await router.replace('/login')
+            return
+          }
+          notify(`Error: ${response.status} ${response.statusText}`);
+          return;
+        }
+
+        const data = await response.json()
+
+        if (data.jobs && data.length !== undefined) {
+            return
+        }
+
+        jobs.value = data.jobs
+        return 
+    } catch (e) {
+        console.error(e)
     }
-])
+}
+
+onMounted(async () => {
+    try {
+        await getJobList()
+        loading.value = false
+    } catch (e) {
+        console.error(e)
+    }
+})
 
 </script>
 
@@ -62,12 +95,16 @@ const jobs = ref([
                                 <td>{{job.Date}}</td>
                                 <td class="action-buttons">
                                     <button class="action-btn"><i class="fa-solid fa-pencil"></i></button>
-                                    <button class="action-btn delete-btn"><i class="fa-solid fa-trash"></i></button>
+                                    <button class="action-btn delete-btn" @click="deleteJob(job.Id)"><i class="fa-solid fa-trash"></i></button>
                                 </td>
                             </tr>
                         </template>
                     </tbody>
                 </table>
+            
+                <div v-if="loading">
+                    <i  class="fa-solid fa-spinner fa-spin-pulse"></i>
+                </div>
             </div>
         </main>
     </div>

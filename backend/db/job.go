@@ -82,7 +82,7 @@ func (r *sqliteRepo) GetJob(ctx context.Context, jobId string, userId string) (*
 	return &job, nil
 }
 
-func (r *sqliteRepo) GetJobs(ctx context.Context, userId string, limit, offset int) ([]*jobs.Job, error) {
+func (r *sqliteRepo) GetJobs(ctx context.Context, userId string, limit, offset int) (jobs.Jobs, error) {
 	r.logger.Info("Fetching jobs", "userId", userId, "limit", limit, "offset", offset)
 	rows, err := r.db.QueryContext(ctx, getJobsQuery, userId, limit, offset)
 	if err != nil {
@@ -91,7 +91,7 @@ func (r *sqliteRepo) GetJobs(ctx context.Context, userId string, limit, offset i
 	}
 	defer rows.Close()
 
-	var jobList []*jobs.Job
+	var jobList jobs.Jobs
 	for rows.Next() {
 		var job jobs.Job
 		var tasks, result string

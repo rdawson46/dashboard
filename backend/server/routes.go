@@ -38,7 +38,7 @@ func addRoutes(h *http.ServeMux, s *Server) {
     h.HandleFunc("/api/refresh", s.refreshHandler)
     h.HandleFunc("/api/register", s.registerHandler)
 
-
+	// chat and model routes
     h.Handle("/api/chat", s.jwt_manager.AuthMiddleware(
 		s.rateLimitMiddleware(http.HandlerFunc(chatHandler)),
 	))
@@ -53,6 +53,9 @@ func addRoutes(h *http.ServeMux, s *Server) {
 
 	h.Handle("/api/messages", s.jwt_manager.AuthMiddleware(s.getChatHandler))
 	h.Handle("/api/deleteMessages", s.jwt_manager.AuthMiddleware(s.deleteChatHandler))
+
+	// job routes
+	h.Handle("/api/jobList", s.jwt_manager.AuthMiddleware(s.viewAllJobs))
 }
 
 // =======================================

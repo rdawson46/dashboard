@@ -83,7 +83,6 @@ async function deleteChat(chatId) {
 
 async function logout() {
   try {
-    await fetch('/api/logout', )
     const response = await fetch('/api/logout', { credentials: 'include' })
 
     await router.push('/')

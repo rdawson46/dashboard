@@ -1,5 +1,5 @@
 # To Do
-* sidebar active class
+* clean up notify function
 * job registration
 * input to seperate component
 * auth issue after creating new account

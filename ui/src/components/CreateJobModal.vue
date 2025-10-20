@@ -11,14 +11,45 @@ const query = ref('');
 
 // Tool Job
 const toolType = ref('code')
-const code = ref('')
+const codeFile = ref(null)
 const webQuery = ref('')
 
 const freq = ref('15mins');
 
+function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        if (file.size > 10 * 1024 * 1024) {
+            alert("File size exceeds 10MB");
+            event.target.value = ''; // Clear the file input
+            codeFile.value = null;
+            return;
+        }
+        if (!file.name.endsWith('.py')) {
+            alert("Only .py files are allowed");
+            event.target.value = ''; // Clear the file input
+            codeFile.value = null;
+            return;
+        }
+        codeFile.value = file;
+    }
+}
+
 function createJob() {
     if (jobName.value && jobType.value) {
-        emit('create-job', { name: jobName.value, type: jobType.value });
+        const jobData = { name: jobName.value, type: jobType.value };
+        if (jobType.value === 'LLM') {
+            jobData.query = query.value;
+            jobData.freq = freq.value;
+        } else if (jobType.value === 'Tool') {
+            jobData.toolType = toolType.value;
+            if (toolType.value === 'code') {
+                jobData.codeFile = codeFile.value;
+            } else if (toolType.value === 'search') {
+                jobData.webQuery = webQuery.value;
+            }
+        }
+        emit('create-job', jobData);
     }
 }
 </script>
@@ -69,8 +100,8 @@ function createJob() {
                         <Transition name="fade" mode="out-in">
                             <div v-if="toolType === 'code'">
                                 <div class="form-group">
-                                    <label for="code">Code</label>
-                                    <input type="text" id="code" v-model="code" required>
+                                    <label for="code-upload">Upload Code</label>
+                                    <input type="file" id="code-upload" @change="handleFileUpload" accept=".py" required>
                                 </div>
                             </div>
 
@@ -128,7 +159,7 @@ h2 {
     opacity: 0.8;
 }
 
-select {
+select, input[type="file"] {
   background-color: var(--bg-color-light);
   border: 1px solid var(--border-color);
   color: var(--text-color);
@@ -138,9 +169,26 @@ select {
   width: 100%;
 }
 
-select:focus {
+select:focus, input[type="file"]:focus {
   outline: none;
   border-color: var(--primary-color);
+}
+
+input[type="file"]::file-selector-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-right: 1rem;
+}
+
+input[type="file"]::file-selector-button:hover {
+    background-color: var(--primary-color-light);
 }
 
 .form-actions {

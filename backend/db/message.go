@@ -13,7 +13,7 @@ import (
 var (
 	getChatbyIdQuery = `SELECT messages FROM messages WHERE id = ? AND user_id = ?`
 	createMessageQuery = `INSERT INTO messages (id, user_id, messages, description) VALUES (?, ?, ?, ?)`
-	getDescriptionsQuery = `SELECT id, description FROM messages WHERE user_id = ? ORDER BY created_at LIMIT ? OFFSET ?`
+	getDescriptionsQuery = `SELECT id, description FROM messages WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`
 	deleteMessageQuery = `DELETE FROM messages WHERE id = ? AND user_id = ?`
 	updateMessageQuery = `UPDATE messages SET messages = ? WHERE id = ? AND user_id = ?`
 )

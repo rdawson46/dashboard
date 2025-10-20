@@ -1,5 +1,6 @@
 <script setup>
 import Sidebar from '@/components/sidebar.vue'
+import CreateJobModal from '@/components/CreateJobModal.vue'
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -9,9 +10,16 @@ const jobs = ref([])
 const limit = ref(10)
 const offset = ref(0)
 const loading = ref(true)
+const showCreateJobModal = ref(false)
 
 function deleteJob(id) {
     console.log(`Delete ${id}`)
+}
+
+function handleCreateJob(jobData) {
+    console.log('Creating job:', jobData)
+    // Here you would typically make an API call to create the job
+    showCreateJobModal.value = false
 }
 
 function notify(message) {
@@ -70,7 +78,7 @@ onMounted(async () => {
         <main class="jobs-main-content glass-card">
             <header class="jobs-header">
                 <h1>Jobs</h1>
-                <button class="create-job-btn">
+                <button class="create-job-btn" @click="showCreateJobModal = true">
                     <i class="fa-solid fa-plus"></i>
                     <span>Create Job</span>
                 </button>
@@ -107,6 +115,11 @@ onMounted(async () => {
                 </div>
             </div>
         </main>
+        <CreateJobModal 
+            v-if="showCreateJobModal" 
+            @close="showCreateJobModal = false"
+            @create-job="handleCreateJob"
+        />
     </div>
 </template>
 

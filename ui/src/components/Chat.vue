@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch, watchEffect, nextTick, computed, reactive } from 'vue';
+import { ref, onMounted, watch, nextTick, computed, reactive } from 'vue';
 import { Marked } from 'marked';
 import { markedHighlight } from "marked-highlight";
 import hljs from 'highlight.js';
@@ -181,7 +181,7 @@ async function getMessages(id) {
   }
 
   const body = {
-    "chatId": messageId.value ? messageId.value.toString() : null,
+    "chatId": id ? id : null,
     "userId": authStore.id.toString(),
   }
 

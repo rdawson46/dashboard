@@ -40,46 +40,49 @@ function createJob() {
                     </select>
                 </div>
 
-                <template v-if="jobType === 'LLM'">
-                    <div class="form-group">
-                        <label for="job-freq">Frequency</label>
-                        <select id="job-freq" v-model="freq" required>
-                            <option value="15mins">15 Minutes</option>
-                            <option value="30mins">30 Minutes</option>
-                            <option value="1hour">1 Hour</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="job-name">Query</label>
-                        <input type="text" id="query" v-model="query" required>
-                    </div>
-
-                </template>
-
-                <template v-else-if="jobType === 'Tool'">
-                    <div class="form-group">
-                        <label for="tool-type">Tool</label>
-                        <select id="tool-type" v-model="toolType" required>
-                            <option value="code">Python Code</option>
-                            <option value="search">Web Search</option>
-                        </select>
-                    </div>
-
-                    <template v-if="toolType === 'code'">
+                <Transition name="fade" mode="out-in">
+                    <div v-if="jobType === 'LLM'">
                         <div class="form-group">
-                            <label for="code">Code</label>
-                            <input type="text" id="code" v-model="code" required>
+                            <label for="job-freq">Frequency</label>
+                            <select id="job-freq" v-model="freq" required>
+                                <option value="15mins">15 Minutes</option>
+                                <option value="30mins">30 Minutes</option>
+                                <option value="1hour">1 Hour</option>
+                            </select>
                         </div>
-                    </template>
 
-                    <template v-else-if="toolType === 'search'">
                         <div class="form-group">
-                            <label for="search">Search Query</label>
-                            <input type="text" id="search" v-model="webQuery" required>
+                            <label for="job-name">Query</label>
+                            <input type="text" id="query" v-model="query" required>
                         </div>
-                    </template>
-                </template>
+                    </div>
+
+                    <div v-else-if="jobType === 'Tool'">
+                        <div class="form-group">
+                            <label for="tool-type">Tool</label>
+                            <select id="tool-type" v-model="toolType" required>
+                                <option value="code">Python Code</option>
+                                <option value="search">Web Search</option>
+                            </select>
+                        </div>
+
+                        <Transition name="fade" mode="out-in">
+                            <div v-if="toolType === 'code'">
+                                <div class="form-group">
+                                    <label for="code">Code</label>
+                                    <input type="text" id="code" v-model="code" required>
+                                </div>
+                            </div>
+
+                            <div v-else-if="toolType === 'search'">
+                                <div class="form-group">
+                                    <label for="search">Search Query</label>
+                                    <input type="text" id="search" v-model="webQuery" required>
+                                </div>
+                            </div>
+                        </Transition>
+                    </div>
+                </Transition>
                 <div class="form-actions">
                     <button type="button" class="cancel-btn" @click="$emit('close')">Cancel</button>
                     <button type="submit" class="create-btn">Create</button>
@@ -153,5 +156,16 @@ select:focus {
 
 .cancel-btn:hover {
     background-color: var(--border-color);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>

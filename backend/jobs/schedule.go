@@ -12,7 +12,7 @@ func FindReadyJobs(db *sql.DB) (Jobs, error) {
 }
 
 
-func StartScheduler(ctx context.Context, db *sql.DB, jobs chan<- *Job) {
+func (jp *JobPipeline) StartScheduler(ctx context.Context, jobs chan<- *Job) {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
@@ -21,7 +21,7 @@ func StartScheduler(ctx context.Context, db *sql.DB, jobs chan<- *Job) {
 		case <-ctx.Done():
 			return
 		case <- ticker.C:
-			readyJobs, err := FindReadyJobs(db)
+			readyJobs, err := FindReadyJobs(jp.db)
 			if err != nil {
 				// TODO: add logger and log this error
 			}

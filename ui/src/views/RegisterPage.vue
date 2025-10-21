@@ -86,7 +86,7 @@ const register = async () => {
     }
 
     const data = await res.json()
-    authStore.setUser(data.user)
+    authStore.setUser(data)
     router.push('/chat')
 
   } catch (e) {

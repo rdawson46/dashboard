@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import { toast } from 'vue3-toastify';
+import { useNotify } from '@/composables/notify.js'
 import 'vue3-toastify/dist/index.css';
 
 import { router } from '@/router'
@@ -47,22 +47,13 @@ const togglePasswordVisibility = () => {
   passwordFieldType.value = passwordFieldType.value === 'password' ? 'text' : 'password';
 };
 
-
-function notify(message) {
-    toast(message, {
-        autoClose: 1000,
-        theme: 'dark',
-    });
-}
-
-
 const register = async () => {
   if (passwordsMismatch.value) {
-    notify("Passwords do not match!");
+    useNotify("Passwords do not match!");
     return;
   }
   if (!rules.value.length || !rules.value.uppercase || !rules.value.special || !rules.value.number) {
-    notify("Password does not meet the requirements.");
+    useNotify("Password does not meet the requirements.");
     return;
   }
 
@@ -81,7 +72,7 @@ const register = async () => {
 
     if (!res.ok) {
       const data = await res.json()
-      notify(data.error)
+      useNotify(data.error)
       return
     }
 
@@ -90,7 +81,7 @@ const register = async () => {
     router.push('/chat')
 
   } catch (e) {
-    notify(`Error occured`)
+    useNotify(`Error occured`)
     console.error(e)
   }
 };

@@ -3,6 +3,7 @@ import Sidebar from '@/components/sidebar.vue'
 import CreateJobModal from '@/components/CreateJobModal.vue'
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useNotify } from '@/composables/notify.js'
 
 const router = useRouter();
 
@@ -22,13 +23,6 @@ function handleCreateJob(jobData) {
     showCreateJobModal.value = false
 }
 
-function notify(message) {
-  toast(message, {
-    autoClose: 1000,
-    theme: 'dark',
-  });
-}
-
 async function getJobList() {
     const params = new URLSearchParams()
     params.append('limit', limit.value)
@@ -44,7 +38,7 @@ async function getJobList() {
             await router.replace('/login')
             return
           }
-          notify(`Error: ${response.status} ${response.statusText}`);
+          useNotify(`Error: ${response.status} ${response.statusText}`);
           return;
         }
 

@@ -4,12 +4,12 @@ import { Marked } from 'marked';
 import { markedHighlight } from "marked-highlight";
 import hljs from 'highlight.js';
 import 'highlight.js/styles/atom-one-dark.css';
-import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
 import { useAuthStore } from '@/stores/auth'
 import { useStream } from '@/composables/stream.js'
 import Message from '@/components/Message.vue'
 import { useRoute, useRouter } from 'vue-router';
+import { useNotify } from '@/composables/notify.js'
 
 const route = useRoute();
 const router = useRouter();
@@ -107,17 +107,9 @@ watch(chatMessages, async () => {
   }
 }, { deep: true });
 
-
-function notify(message) {
-  toast(message, {
-    autoClose: 1000,
-    theme: 'dark',
-  });
-}
-
 async function query() {
   if (!authStore.username || !authStore.id) {
-    notify("Invalid username or id")
+    useNotify("Invalid username or id")
     chatMessages.value.pop();
     return
   }
@@ -155,7 +147,7 @@ async function getModelList() {
         await router.replace('/login')
         return
       }
-      notify(`Error: ${response.status} ${response.statusText}`);
+      useNotify(`Error: ${response.status} ${response.statusText}`);
       return;
     }
 
@@ -176,7 +168,7 @@ async function getModelList() {
 
 async function getMessages(id) {
   if (!authStore.username || !authStore.id) {
-    notify("Invalid username or id")
+    useNotify("Invalid username or id")
     return
   }
 
@@ -200,7 +192,7 @@ async function getMessages(id) {
         await router.replace('/login')
         return [];
       }
-      notify(`Error: ${response.status} ${response.statusText}`);
+      useNotify(`Error: ${response.status} ${response.statusText}`);
       router.push({ name: 'New Chat' })
       return [];
     }

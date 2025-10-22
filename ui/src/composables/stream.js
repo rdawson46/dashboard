@@ -2,8 +2,9 @@ import { Marked } from 'marked';
 import { markedHighlight } from "marked-highlight";
 import hljs from 'highlight.js';
 import 'highlight.js/styles/atom-one-dark.css';
-import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
+import { useNotify } from '@/composables/notify.js'
+
 
 const marked = new Marked(
     markedHighlight({
@@ -14,13 +15,6 @@ const marked = new Marked(
         }
     })
 );
-
-function notify(message) {
-    toast(message, {
-        autoClose: 1000,
-        theme: 'dark',
-    });
-}
 
 export async function useStream(
     body,
@@ -46,7 +40,7 @@ export async function useStream(
                 await router.replace('/login')
                 return
             }
-            notify(`Error: ${response.status} ${response.statusText}`);
+            useNotify(`Error: ${response.status} ${response.statusText}`);
             chatMessages.value.pop();
             return;
         }

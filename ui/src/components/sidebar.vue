@@ -1,10 +1,10 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
 import { useAuthStore } from '@/stores/auth';
 import { RouterLink } from 'vue-router';
 import { useRouter } from 'vue-router';
+import { useNotify } from '@/composables/notify.js'
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -12,13 +12,6 @@ const router = useRouter();
 const history = ref([]);
 const collapse = ref(false)
 const deletingChatId = ref(null);
-
-function notify(message) {
-    toast(message, {
-        autoClose: 1000,
-        theme: 'dark',
-    });
-}
 
 async function getHistory() {
   try{
@@ -30,14 +23,14 @@ async function getHistory() {
     const data = await res.json();
     return data;
   } catch (e) {
-    notify(`Can't get chat history`)
+    useNotify(`Can't get chat history`)
     throw e
   }
 }
 
 async function deleteChat(chatId) {
     if (!authStore.id) {
-      notify('No user id')
+      useNotify('No user id')
     }
 
     deletingChatId.value = chatId;
@@ -58,14 +51,14 @@ async function deleteChat(chatId) {
       })
 
       if (!response.ok) {
-        notify(`Error: ${response.status} ${response.statusText}`);
+        useNotify(`Error: ${response.status} ${response.statusText}`);
         return;
       }
 
       const data = await response.json();
 
       if (!data['Status'] && data['Status'] != 'ok') {
-        notify('Failed to delete chat')
+        useNotify('Failed to delete chat')
         return
       }
       for (let i = 0; i < history.value.length; i++) {
@@ -75,7 +68,7 @@ async function deleteChat(chatId) {
       }
     } catch (e) {
       console.error('Error parsing JSON:', e);
-      notify('Error processing server response.');
+      useNotify('Error processing server response.');
     } finally {
       deletingChatId.value = null;
     }

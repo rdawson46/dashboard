@@ -1,8 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
+import { useNotify } from '@/composables/notify.js'
 
 import { router } from '@/router'
 import { useAuthStore } from '@/stores/auth'
@@ -16,14 +16,6 @@ const authStore = useAuthStore()
 const passwordFieldIcon = computed(() => {
   return passwordFieldType.value === 'password' ? 'fa-eye' : 'fa-eye-slash';
 });
-
-
-function notify(message) {
-    toast(message, {
-        autoClose: 1000,
-        theme: 'dark',
-    });
-}
 
 const togglePasswordVisibility = () => {
   passwordFieldType.value = passwordFieldType.value === 'password' ? 'text' : 'password';
@@ -47,7 +39,7 @@ const login = async () => {
 
     if (!res.ok) {
       const data = await res.json()
-      notify(data.error)
+      useNotify(data.error)
       console.log(res)
       return
     }
@@ -56,7 +48,7 @@ const login = async () => {
     authStore.setUser(data)
     router.push('/chat')
   } catch (e) {
-    notify("An error has occured while logging in")
+    useNotify("An error has occured while logging in")
     console.log(e)
     return
   }

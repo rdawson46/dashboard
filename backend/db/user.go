@@ -19,7 +19,6 @@ var (
 	createUserQuery = `INSERT INTO users (id, username, password) VALUES (?, ?, ?)`
 	signInUserQuery = `SELECT id, username, created_at, password FROM users WHERE username = ?`
 	getModelQuery = `SELECT model FROM users WHERE id = ?`
-	setModelQuery = `UPDATE users SET model = ? WHERE id = ?`
 )
 
 type User_db struct {
@@ -177,6 +176,7 @@ func (r *sqliteRepo) GetPerferredModel(ctx context.Context, userId string) (stri
 }
 
 func (r *sqliteRepo) SetPerferredModel(ctx context.Context, userId, model string) error {
+	/*
 	r.logger.Info("Setting preferred model", "userId", userId, "model", model)
 	result, err := r.db.Exec(setModelQuery, model, userId)
 
@@ -197,5 +197,6 @@ func (r *sqliteRepo) SetPerferredModel(ctx context.Context, userId, model string
 	}
 
 	return nil
+	*/
+	return nil
 }
-

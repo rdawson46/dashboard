@@ -12,10 +12,10 @@ import (
 
 var (
 	getChatbyIdQuery = `SELECT messages FROM messages WHERE id = ? AND user_id = ?`
-	createMessageQuery = `INSERT INTO messages (id, user_id, messages, description) VALUES (?, ?, ?, ?)`
-	getDescriptionsQuery = `SELECT id, description FROM messages WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`
+	createMessageQuery = `INSERT INTO messages (id, user_id, messages, description, model) VALUES (?, ?, ?, ?, ?)`
+	getDescriptionsQuery = `SELECT id, description FROM messages WHERE user_id = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?`
 	deleteMessageQuery = `DELETE FROM messages WHERE id = ? AND user_id = ?`
-	updateMessageQuery = `UPDATE messages SET messages = ? WHERE id = ? AND user_id = ?`
+	updateMessageQuery = `UPDATE messages SET messages = ?, model = ? WHERE id = ? AND user_id = ?`
 )
 
 type Message_db struct {
@@ -63,7 +63,7 @@ func (r *sqliteRepo) GetMessages()    {}
 func (r *sqliteRepo) GetMessageCount() {}
 func (r *sqliteRepo) UpdateMessage()  {}
 
-func (r *sqliteRepo) CreateMessage(ctx context.Context, userId string, messages []ollama.Message) (string, error) {
+func (r *sqliteRepo) CreateMessage(ctx context.Context, userId, model string, messages []ollama.Message) (string, error) {
 	r.logger.Info("Creating message", "userId", userId)
 
 	desc := generateDesc(messages)
@@ -77,7 +77,7 @@ func (r *sqliteRepo) CreateMessage(ctx context.Context, userId string, messages 
 
 	messageID := uuid.New().String()
 
-	_, err = r.db.Exec(createMessageQuery, messageID, userId, string(messageString), desc)
+	_, err = r.db.Exec(createMessageQuery, messageID, userId, string(messageString), desc, model)
 
 	if err != nil {
 		r.logger.Error("failed to create message", "messageId", messageID, "userId", userId)
@@ -138,7 +138,7 @@ func (r *sqliteRepo) DeleteMessage(ctx context.Context, id string, user_id strin
 	return true, nil
 }
 
-func (r *sqliteRepo) AddMessage(ctx context.Context, messageId, userId string, messages []ollama.Message) (bool, error) {
+func (r *sqliteRepo) AddMessage(ctx context.Context, messageId, userId, model string, messages []ollama.Message) (bool, error) {
 	r.logger.Info("Adding message", "messageId", messageId, "userId", userId)
 	/*
 	 **kind of a terrible impl**
@@ -151,7 +151,7 @@ func (r *sqliteRepo) AddMessage(ctx context.Context, messageId, userId string, m
 		return false, err
 	}
 
-	result, err := r.db.Exec(updateMessageQuery, string(messageString), messageId, userId)
+	result, err := r.db.Exec(updateMessageQuery, string(messageString), model, messageId, userId)
 
 	if err != nil {
 		r.logger.Error("failed to update message", "messageId", messageId, "userId", userId)

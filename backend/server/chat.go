@@ -92,7 +92,7 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
             "user", user.Username,
         )
 
-        id, err := s.db.CreateMessage(r.Context(), user.ID, chatReq.Query)
+        id, err := s.db.CreateMessage(r.Context(), user.ID, chatReq.Model, chatReq.Query)
 
         if err != nil {
             w.WriteHeader(http.StatusInternalServerError)
@@ -286,17 +286,17 @@ token_count := 0
         final,
     )
 
-    success, err := s.db.AddMessage(r.Context(), messageId, user.ID, chatReq.Query)
+    success, err := s.db.AddMessage(r.Context(), messageId, user.ID, chatReq.Model, chatReq.Query)
 
     if err != nil {
         s.logger.Error(err.Error())
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        // http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
 
     if !success {
         s.logger.Error("Failed to add messages")
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        // http.Error(w, "Failed to add message", http.StatusInternalServerError)
         return
     }
 

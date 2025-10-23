@@ -19,9 +19,9 @@ type MessageDB interface {
     GetMessages() ()
     GetMessageCount() ()
 
-    CreateMessage(ctx context.Context, userId string, message []ollama.Message) (string, error)
+    CreateMessage(ctx context.Context, userId, model string, message []ollama.Message) (string, error)
     UpdateMessage() ()
-	AddMessage(ctx context.Context, messageId, userId string, message []ollama.Message) (bool, error)
+	AddMessage(ctx context.Context, messageId, userId, model string, message []ollama.Message) (bool, error)
 
     GetDescriptions(ctx context.Context, userId string, limit, offset int) (Descriptions, error)
 }

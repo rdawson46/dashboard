@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     username TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     password TEXT NOT NULL,
     model TEXT
 );
@@ -40,6 +41,16 @@ BEGIN
     WHERE id = NEW.id;
 END;
 
+CREATE TRIGGER IF NOT EXISTS update_users_updated_at
+AFTER UPDATE ON users
+FOR EACH ROW
+BEGIN
+    UPDATE users
+    SET
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = NEW.id;
+END;
+
 CREATE TRIGGER IF NOT EXISTS update_messages_updated_at
 AFTER UPDATE ON messages
 FOR EACH ROW
@@ -56,6 +67,6 @@ FOR EACH ROW
 BEGIN
     UPDATE users
     SET
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = OLD.user_id;
+        model = NEW.model
+    WHERE id = NEW.user_id;
 END;

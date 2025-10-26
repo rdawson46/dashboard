@@ -18,8 +18,6 @@ function deleteJob(id) {
 }
 
 async function handleCreateJob(jobForm) {
-    console.log('Creating job:', jobForm)
-    // Here you would typically make an API call to create the job
     try {
         const res = await fetch('/api/createJob', {
             method: 'POST',
@@ -33,7 +31,7 @@ async function handleCreateJob(jobForm) {
         }
 
         const data = await res.json()
-        console.log(data)
+        jobs.value.push(data)
     } catch (e) {
         useNotify('Unable to create job')
         console.error(e)
@@ -62,14 +60,9 @@ async function getJobList() {
 
         const data = await response.json()
 
-        console.log(data)
-
         if (!data.jobs || !Array.isArray(data.jobs)) {
             return
         }
-
-        console.log(data.jobs)
-        console.log('here')
 
         jobs.value = data.jobs
         return 
@@ -119,8 +112,9 @@ onMounted(async () => {
                                 <td><span class="status" :class="[`status-${job.status.toLowerCase()}`]">{{job.status}}</span></td>
                                 <!--<td>{{job.date}}</td>-->
                                 <td class="action-buttons">
+                                    <button class="action-btn"><i class="fa-solid fa-play"></i></button>
                                     <button class="action-btn"><i class="fa-solid fa-pencil"></i></button>
-                                    <button class="action-btn delete-btn" @click="deleteJob(job.Id)"><i class="fa-solid fa-trash"></i></button>
+                                    <button class="action-btn delete-btn" @click="deleteJob(job.id)"><i class="fa-solid fa-trash"></i></button>
                                 </td>
                             </tr>
                         </template>

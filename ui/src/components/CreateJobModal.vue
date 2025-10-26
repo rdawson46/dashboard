@@ -37,19 +37,26 @@ function handleFileUpload(event) {
 
 function createJob() {
     if (jobName.value && jobType.value) {
-        const jobData = { name: jobName.value, type: jobType.value };
+        const formData = new FormData();
+
+        formData.append('name', jobName.value);
+        formData.append('type', jobType.value);
+        formData.append('freq', freq.value);
+
         if (jobType.value === 'LLM') {
-            jobData.query = query.value;
-            jobData.freq = freq.value;
+            formData.append('query', query.value);
+
         } else if (jobType.value === 'Tool') {
-            jobData.toolType = toolType.value;
+            formData.append('toolType', toolType.value);
+
             if (toolType.value === 'code') {
-                jobData.codeFile = codeFile.value;
+                formData.append('codeFile', codeFile.value);
             } else if (toolType.value === 'search') {
-                jobData.webQuery = webQuery.value;
+                formData.append('webQuery', webQuery.value);
             }
         }
-        emit('create-job', jobData);
+
+        emit('create-job', formData);
     }
 }
 </script>
@@ -63,6 +70,7 @@ function createJob() {
                     <label for="job-name">Job Name</label>
                     <input type="text" id="job-name" v-model="jobName" required>
                 </div>
+
                 <div class="form-group">
                     <label for="job-type">Job Type</label>
                     <select id="job-type" v-model="jobType" required>
@@ -71,23 +79,22 @@ function createJob() {
                     </select>
                 </div>
 
+                <div class="form-group">
+                    <label for="job-freq">Frequency</label>
+                    <select id="job-freq" v-model="freq" required>
+                        <option value="15mins">15 Minutes</option>
+                        <option value="30mins">30 Minutes</option>
+                        <option value="1hour">1 Hour</option>
+                    </select>
+                </div>
+
                 <Transition name="fade" mode="out-in">
                     <div v-if="jobType === 'LLM'">
-                        <div class="form-group">
-                            <label for="job-freq">Frequency</label>
-                            <select id="job-freq" v-model="freq" required>
-                                <option value="15mins">15 Minutes</option>
-                                <option value="30mins">30 Minutes</option>
-                                <option value="1hour">1 Hour</option>
-                            </select>
-                        </div>
-
                         <div class="form-group">
                             <label for="job-name">Query</label>
                             <input type="text" id="query" v-model="query" required>
                         </div>
                     </div>
-
                     <div v-else-if="jobType === 'Tool'">
                         <div class="form-group">
                             <label for="tool-type">Tool</label>

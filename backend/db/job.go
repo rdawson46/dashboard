@@ -12,27 +12,27 @@ import (
 )
 
 var (
-	createJobQuery = `INSERT INTO jobs (id, user_id, tasks, model, status, time, freq, result) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-	getJobQuery = `SELECT id, user_id, tasks, model, status, time, freq, result FROM jobs WHERE id = ? AND user_id = ?`
-	getJobsQuery = `SELECT id, user_id, tasks, model, status, time, freq, result FROM jobs WHERE user_id = ? LIMIT ? OFFSET ?`
-	updateJobQuery = `UPDATE jobs SET tasks = ?, model = ?, status = ?, time = ?, freq = ?, result = ? WHERE id = ?`
+	createJobQuery = `INSERT INTO jobs (id, name, user_id, task, model, status, time, freq, result) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	getJobQuery = `SELECT id, user_id, task, model, status, time, freq, result FROM jobs WHERE id = ? AND user_id = ?`
+	getJobsQuery = `SELECT id, name, user_id, task, model, status, time, freq, result FROM jobs WHERE user_id = ? LIMIT ? OFFSET ?`
+	updateJobQuery = `UPDATE jobs SET task = ?, model = ?, status = ?, time = ?, freq = ?, result = ? WHERE id = ?`
 	deleteJobQuery = `DELETE FROM jobs WHERE id = ? AND user_id = ?`
-	peekJobQuery = `SELECT id, user_id, tasks, model, status, time, freq, result FROM jobs WHERE status = 'pending' AND datetime(time) <= CURRENT_TIMESTAMP ORDER BY created_at ASC LIMIT 1`
+	peekJobQuery = `SELECT id, user_id, task, model, status, time, freq, result FROM jobs WHERE status = 'pending' AND datetime(time) <= CURRENT_TIMESTAMP ORDER BY created_at ASC LIMIT 1`
 	updateJobStatusQuery = `UPDATE jobs SET status = ? WHERE id = ?`
 )
 
-func (r *sqliteRepo) CreateJob(ctx context.Context, userId string, job jobs.Job) (*jobs.Job, error) {
+func (r *sqliteRepo) CreateJob(ctx context.Context, userId string, job *jobs.Job) (*jobs.Job, error) {
 	jobId := uuid.New().String()
 	job.Id = jobId
-	r.logger.Info("Creating job", "userId", userId)
+	r.logger.Info("Creating job", "userId", userId, "jobId", jobId)
 
 	if job.Status == "" {
 		job.Status = "pending"
 	}
 
-	tasks, err := json.Marshal(job.Tasks)
+	task, err := json.Marshal(job.Task)
 	if err != nil {
-		r.logger.Error("failed to marshal tasks", "jobId", jobId, "userId", userId)
+		r.logger.Error("failed to marshal task", "jobId", jobId, "userId", userId)
 		return nil, err
 	}
 
@@ -42,13 +42,13 @@ func (r *sqliteRepo) CreateJob(ctx context.Context, userId string, job jobs.Job)
 		return nil, err
 	}
 
-	_, err = r.db.ExecContext(ctx, createJobQuery, job.Id, userId, string(tasks), job.Model, job.Status, job.Time, job.Freq, string(results))
+	_, err = r.db.ExecContext(ctx, createJobQuery, job.Id, job.Name, userId, string(task), job.Model, job.Status, job.Time, job.Freq, string(results))
 	if err != nil {
 		r.logger.Error("failed to create job", "jobId", jobId, "userId", userId)
 		return nil, err
 	}
 
-	return &job, nil
+	return job, nil
 }
 
 func (r *sqliteRepo) GetJob(ctx context.Context, jobId string, userId string) (*jobs.Job, error) {
@@ -56,9 +56,9 @@ func (r *sqliteRepo) GetJob(ctx context.Context, jobId string, userId string) (*
 	row := r.db.QueryRowContext(ctx, getJobQuery, jobId, userId)
 
 	var job jobs.Job
-	var tasks, result string
+	var task, result string
 
-	err := row.Scan(&job.Id, &userId, &tasks, &job.Model, &job.Status, &job.Time, &job.Freq, &result)
+	err := row.Scan(&job.Id, &userId, &task, &job.Model, &job.Status, &job.Time, &job.Freq, &result)
 	if err != nil {
 		r.logger.Error("failed to scan job", "jobId", jobId, "userId", userId)
 		if errors.Is(err, sql.ErrNoRows) {
@@ -67,9 +67,9 @@ func (r *sqliteRepo) GetJob(ctx context.Context, jobId string, userId string) (*
 		return nil, err
 	}
 
-	err = json.Unmarshal([]byte(tasks), &job.Tasks)
+	err = json.Unmarshal([]byte(task), &job.Task)
 	if err != nil {
-		r.logger.Error("failed to unmarshal tasks", "jobId", jobId, "userId", userId)
+		r.logger.Error("failed to unmarshal task", "jobId", jobId, "userId", userId)
 		return nil, err
 	}
 
@@ -94,17 +94,17 @@ func (r *sqliteRepo) GetJobs(ctx context.Context, userId string, limit, offset i
 	var jobList jobs.Jobs
 	for rows.Next() {
 		var job jobs.Job
-		var tasks, result string
+		var task, result string
 
-		err := rows.Scan(&job.Id, &userId, &tasks, &job.Model, &job.Status, &job.Time, &job.Freq, &result)
+		err := rows.Scan(&job.Id, &job.Name, &userId, &task, &job.Model, &job.Status, &job.Time, &job.Freq, &result)
 		if err != nil {
 			r.logger.Error("failed to scan job", "userId", userId)
 			return nil, err
 		}
 
-		err = json.Unmarshal([]byte(tasks), &job.Tasks)
+		err = json.Unmarshal([]byte(task), &job.Task)
 		if err != nil {
-			r.logger.Error("failed to unmarshal tasks", "userId", userId)
+			r.logger.Error("failed to unmarshal task", "userId", userId)
 			return nil, err
 		}
 
@@ -122,9 +122,9 @@ func (r *sqliteRepo) GetJobs(ctx context.Context, userId string, limit, offset i
 
 func (r *sqliteRepo) UpdateJob(ctx context.Context, job jobs.Job) (*jobs.Job, error) {
 	r.logger.Info("Updating job", "jobId", job.Id)
-	tasks, err := json.Marshal(job.Tasks)
+	task, err := json.Marshal(job.Task)
 	if err != nil {
-		r.logger.Error("failed to marshal tasks", "jobId", job.Id)
+		r.logger.Error("failed to marshal task", "jobId", job.Id)
 		return nil, err
 	}
 
@@ -134,7 +134,7 @@ func (r *sqliteRepo) UpdateJob(ctx context.Context, job jobs.Job) (*jobs.Job, er
 		return nil, err
 	}
 
-	_, err = r.db.ExecContext(ctx, updateJobQuery, string(tasks), job.Model, job.Status, job.Time, job.Freq, string(results), job.Id)
+	_, err = r.db.ExecContext(ctx, updateJobQuery, string(task), job.Model, job.Status, job.Time, job.Freq, string(results), job.Id)
 	if err != nil {
 		r.logger.Error("failed to update job", "jobId", job.Id)
 		return nil, err
@@ -164,9 +164,9 @@ func (r *sqliteRepo) Peek(ctx context.Context) (*jobs.Job, error) {
 	row := tx.QueryRowContext(ctx, peekJobQuery)
 
 	var job jobs.Job
-	var tasks, result, userId string
+	var task, result, userId string
 
-	err = row.Scan(&job.Id, &userId, &tasks, &job.Model, &job.Status, &job.Time, &job.Freq, &result)
+	err = row.Scan(&job.Id, &userId, &task, &job.Model, &job.Status, &job.Time, &job.Freq, &result)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil // No job available
@@ -186,9 +186,9 @@ func (r *sqliteRepo) Peek(ctx context.Context) (*jobs.Job, error) {
 		return nil, err
 	}
 
-	err = json.Unmarshal([]byte(tasks), &job.Tasks)
+	err = json.Unmarshal([]byte(task), &job.Task)
 	if err != nil {
-		r.logger.Error("failed to unmarshal tasks", "jobId", job.Id)
+		r.logger.Error("failed to unmarshal task", "jobId", job.Id)
 		return nil, err
 	}
 

@@ -1,7 +1,7 @@
 # To Do
 * job registration
+* set a default model
 * input to seperate component
-* auth issue after creating new account
 * job page
 * notification/background job style
 * queue system for async tasks

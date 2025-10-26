@@ -40,7 +40,7 @@ type UserDB interface {
 }
 
 type JobDB interface {
-    CreateJob(ctx context.Context, userId string, job jobs.Job) (*jobs.Job, error)
+    CreateJob(ctx context.Context, userId string, job *jobs.Job) (*jobs.Job, error)
     GetJob(ctx context.Context, jobId string, userId string) (*jobs.Job, error)
     GetJobs(ctx context.Context, userId string, limit, offset int) (jobs.Jobs, error)
     UpdateJob(ctx context.Context, job jobs.Job) (*jobs.Job, error)

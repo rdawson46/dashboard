@@ -17,9 +17,27 @@ function deleteJob(id) {
     console.log(`Delete ${id}`)
 }
 
-function handleCreateJob(jobData) {
-    console.log('Creating job:', jobData)
+async function handleCreateJob(jobForm) {
+    console.log('Creating job:', jobForm)
     // Here you would typically make an API call to create the job
+    try {
+        const res = await fetch('/api/createJob', {
+            method: 'POST',
+            credentials: 'include',
+            body: jobForm
+        })
+
+        if (!res.ok) {
+            useNotify('Unable to create job')
+            return
+        }
+
+        const data = await res.json()
+        console.log(data)
+    } catch (e) {
+        useNotify('Unable to create job')
+        console.error(e)
+    }
     showCreateJobModal.value = false
 }
 
@@ -44,9 +62,14 @@ async function getJobList() {
 
         const data = await response.json()
 
-        if (data.jobs && data.length !== undefined) {
+        console.log(data)
+
+        if (!data.jobs || !Array.isArray(data.jobs)) {
             return
         }
+
+        console.log(data.jobs)
+        console.log('here')
 
         jobs.value = data.jobs
         return 
@@ -84,17 +107,17 @@ onMounted(async () => {
                             <th>Job Name</th>
                             <th>Type</th>
                             <th>Status</th>
-                            <th>Date</th>
+                            <!--<th>Date</th>-->
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <template v-for="job in jobs">
                             <tr>
-                                <td>{{job.Name}}</td>
-                                <td>{{job.Type}}</td>
-                                <td><span class="status" :class="[`status-${job.Status.toLowerCase()}`]">{{job.Status}}</span></td>
-                                <td>{{job.Date}}</td>
+                                <td>{{job.name}}</td>
+                                <td>{{job.task.task_type}}</td>
+                                <td><span class="status" :class="[`status-${job.status.toLowerCase()}`]">{{job.status}}</span></td>
+                                <!--<td>{{job.date}}</td>-->
                                 <td class="action-buttons">
                                     <button class="action-btn"><i class="fa-solid fa-pencil"></i></button>
                                     <button class="action-btn delete-btn" @click="deleteJob(job.Id)"><i class="fa-solid fa-trash"></i></button>

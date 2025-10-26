@@ -1,18 +1,10 @@
 package jobs
 
-type taskType int
-
-const (
-	llm taskType = iota
-	tool
+import (
+	"errors"
+	"net/url"
+	"strings"
 )
-
-
-type Task struct {
-	T      taskType `json:"task_type"`
-	Query  string `json:"query"`
-	Params map[string]string `json:"parameters,omitempty"`
-}
 
 type Status string
 
@@ -22,6 +14,7 @@ const (
 	StatusCompleted Status = "Completed"
 	StatusFailed Status = "Failed"
 )
+
 
 func (s Status) isValidStatus() bool {
 	switch s {
@@ -33,16 +26,28 @@ func (s Status) isValidStatus() bool {
 }
 
 type Job struct {
+	Name   string `json:"name"`
 	Result []string `json:"result"`
 	Time   string `json:"time,omitempty"`
 	Freq   string `json:"freq,omitempty"`
-	Tasks  []Task `json:"tasks"` 
+	// Tasks  []Task `json:"tasks"` 
+	Task   *Task `json:"task"`
 	Model  string `json:"model"`
 	Id	   string `json:"id,omitempty"`
 	Status Status `json:"status"`
 }
 
 type Jobs []*Job
+
+
+func NewJob(task *Task, name, freq string) *Job {
+	return &Job{
+		Name: name,
+		Freq: freq,
+		Status: StatusPending,
+		Task: task,
+	}
+}
 
 func handleLlmTask(task Task) string {
 	return ""
@@ -56,6 +61,7 @@ func handleToolTask(task Task) string {
 func (j *Job) Run() {
 	results := make([]string, 0)
 
+	/*
 	for _, t := range j.Tasks {
 		var r string
 		switch t.T {
@@ -68,6 +74,25 @@ func (j *Job) Run() {
 
 		results = append(results, r)
 	}
+	*/
 
 	j.Result = results
+}
+
+func (j *Job) FillIn(form url.Values) error {
+	switch j.Task.T {
+	case llm:
+		query := strings.TrimSpace(form.Get("query"))
+
+		if query == "" {
+			return errors.New("Invalid query")
+		}
+
+		j.Task.Query = query
+		return nil
+	case tool:
+		return errors.New("Not implemented")
+	default:
+		return errors.New("Invalid Job Type")
+	}
 }

@@ -19,11 +19,12 @@ CREATE TABLE IF NOT EXISTS messages (
 
 CREATE TABLE IF NOT EXISTS jobs (
     id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
     user_id TEXT NOT NULL,
     result TEXT,
     time TEXT,
     freq TEXT,
-    tasks TEXT NOT NULL,
+    task TEXT NOT NULL,
     model TEXT,
     status TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

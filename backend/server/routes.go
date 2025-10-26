@@ -56,6 +56,7 @@ func addRoutes(h *http.ServeMux, s *Server) {
 
 	// job routes
 	h.Handle("/api/jobList", s.jwt_manager.AuthMiddleware(s.viewAllJobs))
+	h.Handle("/api/createJob", s.jwt_manager.AuthMiddleware(s.createJob))
 }
 
 // =======================================

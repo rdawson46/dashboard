@@ -99,9 +99,10 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 
         duration := time.Since(start)
         s.logger.Info("Request handled",
-            "method", r.Method,
             "path", r.URL.Path,
             "duration", duration,
+            "remote", r.RemoteAddr,
+			"status", r.Response.Status,
         )
     })
 }

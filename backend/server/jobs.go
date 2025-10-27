@@ -84,6 +84,56 @@ func (s *Server) createJob(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(j)
 }
 
+func (s *Server) deleteJob(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+		s.logger.Error("Invalid Method", "Method", r.Method)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+		return
+    }
+
+	ctx := r.Context()
+	user, ok := userFromContext(ctx)
+
+	if !ok {
+		s.logger.Error(
+			"User not in context",
+			"path", r.URL.Path,
+		)
+		w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusInternalServerError)
+        json.NewEncoder(w).Encode(map[string]string{"Error": "User not found"})
+        return
+	}
+
+	userId := user.ID
+	jobId := r.URL.Query().Get("jobId")
+
+	if jobId == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+        json.NewEncoder(w).Encode(map[string]string{"Error": "Missing Job Id"})
+		return
+	}
+
+	background_ctx := context.Background()
+	err := s.db.DeleteJob(background_ctx, jobId, userId)
+
+	if err != nil {
+		s.logger.Error(
+			"Error when deleting job",
+			"userId", userId,
+			"jobId", jobId,
+		)
+		http.Error(w, "Unable to delete job", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"Status": "ok"})
+}
 
 func updateJob(w http.ResponseWriter, r *http.Request) {}
 func viewJob(w http.ResponseWriter, r *http.Request) {}

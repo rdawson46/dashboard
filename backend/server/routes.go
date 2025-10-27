@@ -28,35 +28,34 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 
 
 func addRoutes(h *http.ServeMux, s *Server) {
-    // basic routes
-    h.HandleFunc("/", index)
-    h.HandleFunc("/health", healthCheck)
+	// basic routes
+	h.HandleFunc("/", index)
+	h.HandleFunc("/health", healthCheck)
 
-    // user status routes
-    h.HandleFunc("/api/login", s.loginHandler)
-    h.HandleFunc("/api/logout", s.logoutHandler)
-    h.HandleFunc("/api/refresh", s.refreshHandler)
-    h.HandleFunc("/api/register", s.registerHandler)
+	// user status routes
+	h.HandleFunc("/api/login", s.loginHandler)
+	h.HandleFunc("/api/logout", s.logoutHandler)
+	h.HandleFunc("/api/refresh", s.refreshHandler)
+	h.HandleFunc("/api/register", s.registerHandler)
+
+	addAuthRoute := func(path string, handler http.HandlerFunc) {
+		h.Handle(path, s.jwt_manager.AuthMiddleware(handler))
+	}
 
 	// chat and model routes
-    h.Handle("/api/chat", s.jwt_manager.AuthMiddleware(
-		s.rateLimitMiddleware(http.HandlerFunc(chatHandler)),
-	))
-
-    h.Handle("/api/stream", s.jwt_manager.AuthMiddleware(s.streamHandler))
-    h.Handle("/api/modelList", s.jwt_manager.AuthMiddleware(s.modelListHandler))
-    h.Handle("/api/modelInfo", s.jwt_manager.AuthMiddleware(modelShowHandler))
-
-	h.Handle("/api/chatDescription", s.jwt_manager.AuthMiddleware(s.chatDescriptionHandler))
-
-	h.Handle("/api/me", s.jwt_manager.AuthMiddleware(s.verifyHandler))
-
-	h.Handle("/api/messages", s.jwt_manager.AuthMiddleware(s.getChatHandler))
-	h.Handle("/api/deleteMessages", s.jwt_manager.AuthMiddleware(s.deleteChatHandler))
+	addAuthRoute("/api/chat", s.rateLimitMiddleware(http.HandlerFunc(chatHandler)))
+	addAuthRoute("/api/stream", s.streamHandler)
+	addAuthRoute("/api/modelList", s.modelListHandler)
+	addAuthRoute("/api/modelInfo", modelShowHandler)
+	addAuthRoute("/api/chatDescription", s.chatDescriptionHandler)
+	addAuthRoute("/api/me", s.verifyHandler)
+	addAuthRoute("/api/messages", s.getChatHandler)
+	addAuthRoute("/api/deleteMessages", s.deleteChatHandler)
 
 	// job routes
-	h.Handle("/api/jobList", s.jwt_manager.AuthMiddleware(s.viewAllJobs))
-	h.Handle("/api/createJob", s.jwt_manager.AuthMiddleware(s.createJob))
+	addAuthRoute("/api/jobList", s.viewAllJobs)
+	addAuthRoute("/api/createJob", s.createJob)
+	addAuthRoute("/api/deleteJob", s.deleteJob)
 }
 
 // =======================================

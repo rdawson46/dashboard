@@ -102,7 +102,6 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
             "path", r.URL.Path,
             "duration", duration,
             "remote", r.RemoteAddr,
-			"status", r.Response.Status,
         )
     })
 }

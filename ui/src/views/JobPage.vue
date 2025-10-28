@@ -13,8 +13,41 @@ const offset = ref(0)
 const loading = ref(true)
 const showCreateJobModal = ref(false)
 
-function deleteJob(id) {
-    console.log(`Delete ${id}`)
+async function deleteJob(id) {
+    const params = new URLSearchParams()
+    params.append('jobId', id)
+
+    const url = `/api/deleteJob?${params}`
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            credentials: 'include',
+        })
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            await router.replace('/login')
+            return
+          }
+          useNotify(`Error: ${response.status} ${response.statusText}`);
+          return;
+        }
+
+        const data = await response.json()
+
+        if (!data.status && data.status !== "ok") {
+            return
+        }
+
+        // remove item from list by id
+        const modifiedJobs = jobs.value.filter(j => j.id != id);
+        jobs.value = modifiedJobs
+
+        return 
+    } catch (e) {
+        useNotify('Could not delete job')
+    }
 }
 
 async function handleCreateJob(jobForm) {

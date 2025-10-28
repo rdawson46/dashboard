@@ -1,6 +1,7 @@
 <script setup>
 import Sidebar from '@/components/sidebar.vue'
 import CreateJobModal from '@/components/CreateJobModal.vue'
+import EditJobModal from '@/components/EditJobModal.vue'
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useNotify } from '@/composables/notify.js'
@@ -12,6 +13,13 @@ const limit = ref(10)
 const offset = ref(0)
 const loading = ref(true)
 const showCreateJobModal = ref(false)
+const showEditJobModal = ref(false)
+const selectedJob = ref(null)
+
+function openEditJobModal(job) {
+    selectedJob.value = job
+    showEditJobModal.value = true
+}
 
 async function deleteJob(id) {
     const params = new URLSearchParams()
@@ -72,6 +80,31 @@ async function handleCreateJob(jobForm) {
     showCreateJobModal.value = false
 }
 
+async function handleEditJob(jobForm) {
+    try {
+        const res = await fetch('/api/editJob', {
+            method: 'POST',
+            credentials: 'include',
+            body: jobForm
+        })
+
+        if (!res.ok) {
+            useNotify('Unable to edit job')
+            return
+        }
+
+        const updatedJob = await res.json()
+        const index = jobs.value.findIndex(j => j.id === updatedJob.id)
+        if (index !== -1) {
+            jobs.value[index] = updatedJob
+        }
+    } catch (e) {
+        useNotify('Unable to edit job')
+        console.error(e)
+    }
+    showEditJobModal.value = false
+}
+
 async function getJobList() {
     const params = new URLSearchParams()
     params.append('limit', limit.value)
@@ -97,6 +130,7 @@ async function getJobList() {
             return
         }
 
+        console.log(data.jobs)
         jobs.value = data.jobs
         return 
     } catch (e) {
@@ -146,7 +180,7 @@ onMounted(async () => {
                                 <!--<td>{{job.date}}</td>-->
                                 <td class="action-buttons">
                                     <button class="action-btn"><i class="fa-solid fa-play"></i></button>
-                                    <button class="action-btn"><i class="fa-solid fa-pencil"></i></button>
+                                    <button class="action-btn" @click="openEditJobModal(job)"><i class="fa-solid fa-pencil"></i></button>
                                     <button class="action-btn delete-btn" @click="deleteJob(job.id)"><i class="fa-solid fa-trash"></i></button>
                                 </td>
                             </tr>
@@ -163,6 +197,12 @@ onMounted(async () => {
             v-if="showCreateJobModal" 
             @close="showCreateJobModal = false"
             @create-job="handleCreateJob"
+        />
+        <EditJobModal
+            v-if="showEditJobModal"
+            :job="selectedJob"
+            @close="showEditJobModal = false"
+            @edit-job="handleEditJob"
         />
     </div>
 </template>

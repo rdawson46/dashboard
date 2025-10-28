@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
     job: {
@@ -23,6 +23,12 @@ const webQuery = ref('')
 
 const freq = ref('15mins');
 
+function handleKeydown(e) {
+  if (e.key === 'Escape') {
+    emit('close');
+  }
+}
+
 onMounted(() => {
     if (props.job) {
         jobName.value = props.job.name;
@@ -35,6 +41,11 @@ onMounted(() => {
             // TODO: 
         }
     }
+    window.addEventListener('keydown', handleKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown);
 });
 
 

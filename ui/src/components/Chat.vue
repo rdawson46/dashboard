@@ -123,7 +123,7 @@ async function query() {
   inputValue.value = '';
   historyIndex.value = -1;
 
-  chatMessages.value.push({ role: 'assistant', content: '' });
+  chatMessages.value.push({ role: 'assistant', content: '', loading: true });
 
   const body = {
     'model': modelSelector.value,

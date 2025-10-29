@@ -1,5 +1,5 @@
 <script setup>
-    const { role, tool_calls, content, details } = defineProps(['role', 'tool_calls', 'content', 'details'])
+    const { role, tool_calls, content, details, loading } = defineProps(['role', 'tool_calls', 'content', 'details', 'loading'])
 
     async function copyToClip(text) {
       try {
@@ -18,7 +18,7 @@
         Response: {{content}}
     </div>
 
-    <div v-else-if="role !== 'info'" :class="['message', role]">
+    <div v-else-if="role !== 'info'" :class="['message', role, { 'loading': loading && role === 'assistant' }]">
 
         <div v-if="tool_calls" class="glass-card tool-call">
             🔨 <b>Tool Calls</b> 🔧
@@ -32,9 +32,15 @@
             </template>
         </div>
 
-        <span v-if="content.length" v-html="content"></span>
+        <div v-if="content.length" class="content-wrapper">
+            <span v-html="content"></span>
+        </div>
 
-        <i v-if="(!tool_calls || !tool_calls.length) && !content.length" class="fa-solid fa-spinner fa-spin"></i>
+        <div v-if="(!tool_calls || !tool_calls.length) && !content.length" class="spinner">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
     </div>
 
     <div v-else class="info-message">
@@ -51,6 +57,60 @@
 </template>
 
 <style scoped>
+@keyframes message-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1.0);
+  }
+}
+
+.spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+}
+
+.spinner .dot {
+  width: 8px;
+  height: 8px;
+  margin: 0 4px;
+  background-color: var(--primary-color);
+  border-radius: 50%;
+  animation: pulse 1.4s infinite ease-in-out both;
+}
+
+.spinner .dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.spinner .dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+
+@keyframes shimmer-wave {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
 .tool-call, .tool-result {
     padding: 1rem;
 }
@@ -85,6 +145,23 @@
   margin-right: auto;
   align-self: flex-start;
   text-align: left;
+  animation: message-fade-in 0.5s ease-out;
+}
+
+.message.assistant.loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.message.assistant.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+    animation: shimmer-wave 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .info-message {

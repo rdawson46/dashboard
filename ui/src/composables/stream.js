@@ -84,6 +84,7 @@ export async function useStream(
                                             fullResponse += data.message.content
                                             assistantMessage.content = marked.parse(fullResponse);
                                         }
+                                        assistantMessage.loading = false;
                                         apiMessages.push({ 'role': 'assistant', 'content': fullResponse });
 
                                         chatMessages.value.push({ role: 'info', content: fullResponse, details: data });

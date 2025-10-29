@@ -188,7 +188,7 @@ onMounted(async () => {
                 </table>
             
                 <div v-if="loading">
-                    <i  class="fa-solid fa-spinner fa-spin-pulse"></i>
+                    <i  class="fa-solid fa-spinner fa-spin"></i>
                 </div>
             </div>
         </main>

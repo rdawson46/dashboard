@@ -34,7 +34,7 @@
 
         <span v-if="content.length" v-html="content"></span>
 
-        <i v-if="(!tool_calls || !tool_calls.length) && !content.length" class="fa-solid fa-spinner fa-spin-pulse"></i>
+        <i v-if="(!tool_calls || !tool_calls.length) && !content.length" class="fa-solid fa-spinner fa-spin"></i>
     </div>
 
     <div v-else class="info-message">

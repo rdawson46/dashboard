@@ -15,7 +15,7 @@ var (
 	createJobQuery = `INSERT INTO jobs (id, name, user_id, task, model, status, time, freq, result) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	getJobQuery = `SELECT id, user_id, task, model, status, time, freq, result FROM jobs WHERE id = ? AND user_id = ?`
 	getJobsQuery = `SELECT id, name, user_id, task, model, status, time, freq, result FROM jobs WHERE user_id = ? LIMIT ? OFFSET ?`
-	updateJobQuery = `UPDATE jobs SET task = ?, model = ?, status = ?, time = ?, freq = ?, result = ? WHERE id = ?`
+	updateJobQuery = `UPDATE jobs SET task = ?, model = ?, status = ?, time = ?, freq = ?, result = ? WHERE id = ? AND user_id = ?`
 	deleteJobQuery = `DELETE FROM jobs WHERE id = ? AND user_id = ?`
 	peekJobQuery = `SELECT id, user_id, task, model, status, time, freq, result FROM jobs WHERE status = 'pending' AND datetime(time) <= CURRENT_TIMESTAMP ORDER BY created_at ASC LIMIT 1`
 	updateJobStatusQuery = `UPDATE jobs SET status = ? WHERE id = ?`
@@ -120,7 +120,7 @@ func (r *sqliteRepo) GetJobs(ctx context.Context, userId string, limit, offset i
 	return jobList, nil
 }
 
-func (r *sqliteRepo) UpdateJob(ctx context.Context, job jobs.Job) (*jobs.Job, error) {
+func (r *sqliteRepo) UpdateJob(ctx context.Context, job jobs.Job, userId string) (*jobs.Job, error) {
 	r.logger.Info("Updating job", "jobId", job.Id)
 	task, err := json.Marshal(job.Task)
 	if err != nil {
@@ -134,7 +134,7 @@ func (r *sqliteRepo) UpdateJob(ctx context.Context, job jobs.Job) (*jobs.Job, er
 		return nil, err
 	}
 
-	_, err = r.db.ExecContext(ctx, updateJobQuery, string(task), job.Model, job.Status, job.Time, job.Freq, string(results), job.Id)
+	_, err = r.db.ExecContext(ctx, updateJobQuery, string(task), job.Model, job.Status, job.Time, job.Freq, string(results), job.Id, userId)
 	if err != nil {
 		r.logger.Error("failed to update job", "jobId", job.Id)
 		return nil, err

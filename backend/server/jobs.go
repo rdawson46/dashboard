@@ -135,7 +135,83 @@ func (s *Server) deleteJob(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
-func updateJob(w http.ResponseWriter, r *http.Request) {}
+func (s *Server) updateJob(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+		s.logger.Error("Invalid Method", "Method", r.Method)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+		return
+    }
+
+	user, ok := userFromContext(r.Context())
+
+	if !ok {
+		s.logger.Error("User Not Set")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Unable to authorize"})
+		return
+	}
+
+	name := strings.TrimSpace(r.FormValue("name"))
+	toolType := strings.TrimSpace(r.FormValue("type"))
+	freq := strings.TrimSpace(r.FormValue("freq"))
+	jobId := strings.TrimSpace(r.FormValue("jobId"))
+
+	task := jobs.NewTask(toolType)
+
+	if task == nil {
+		s.logger.Error(
+			"Unable to make task",
+			"name", name,
+			"toolType", toolType,
+			"freq", freq,
+		)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid task value"})
+		return
+	}
+
+	// TODO: finish making the job with form values, add checks for valid name and freq
+	j := jobs.NewJob(task, name, freq)
+
+	err := j.FillIn(r.Form)
+
+	if err != nil {
+		s.logger.Error(
+			"Unable to fill in job",
+			"error", err.Error(),
+		)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid task value"})
+		return
+	}
+
+	j.Id = jobId
+
+	background_ctx := context.Background()
+	updatedJob, err := s.db.UpdateJob(background_ctx, *j, user.ID)
+
+	if err != nil {
+		s.logger.Error(
+			"Unable to create job in DB",
+			"error", err.Error(),
+		)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Error creating job"})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(updatedJob)
+}
+
+
 func viewJob(w http.ResponseWriter, r *http.Request) {}
 
 

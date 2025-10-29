@@ -82,7 +82,7 @@ async function handleCreateJob(jobForm) {
 
 async function handleEditJob(jobForm) {
     try {
-        const res = await fetch('/api/editJob', {
+        const res = await fetch('/api/updateJob', {
             method: 'POST',
             credentials: 'include',
             body: jobForm
@@ -130,7 +130,6 @@ async function getJobList() {
             return
         }
 
-        console.log(data.jobs)
         jobs.value = data.jobs
         return 
     } catch (e) {

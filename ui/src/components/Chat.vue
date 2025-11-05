@@ -8,6 +8,7 @@ import 'vue3-toastify/dist/index.css';
 import { useAuthStore } from '@/stores/auth'
 import { useStream } from '@/composables/stream.js'
 import Message from '@/components/Message.vue'
+import ChatInput from '@/components/ChatInput.vue'
 import { useRoute, useRouter } from 'vue-router';
 import { useNotify } from '@/composables/notify.js'
 
@@ -18,76 +19,16 @@ const authStore = useAuthStore();
 
 const messageId = ref(route.params.id || null);
 
-const searchActive = ref(false);
-const codeActive = ref(false);
-
 const chatContainer = ref(null);
-const inputContainer = ref(null);
+const chatInput = ref(null);
 
 const apiMessages = reactive([]);
 const chatMessages = ref([]);
 
-const inputValue = ref('');
 const userMessageHistory = computed(() => apiMessages.filter(msg => msg.role === 'user'));
-const historyIndex = ref(-1);
-let pristineInput = '';
 
 const modelList = ref([])
 const modelSelector = ref(null)
-
-const handleInput = (e) => {
-    inputValue.value = e.target.innerText;
-    if (historyIndex.value !== -1) {
-        historyIndex.value = -1;
-        pristineInput = '';
-    }
-};
-
-function navigateHistoryUp() {
-    if (!userMessageHistory.value.length) return;
-
-    if (historyIndex.value === -1) {
-        pristineInput = inputValue.value;
-        historyIndex.value = userMessageHistory.value.length - 1;
-    } else if (historyIndex.value > 0) {
-        historyIndex.value--;
-    } else {
-        return;
-    }
-    inputValue.value = userMessageHistory.value[historyIndex.value].content;
-}
-
-function navigateHistoryDown() {
-    if (historyIndex.value === -1) return;
-
-    if (historyIndex.value < userMessageHistory.value.length - 1) {
-        historyIndex.value++;
-        inputValue.value = userMessageHistory.value[historyIndex.value].content;
-    } else {
-        historyIndex.value = -1;
-        inputValue.value = pristineInput;
-    }
-}
-
-watch(inputValue, (newValue) => {
-    if (inputContainer.value && newValue !== inputContainer.value.innerText) {
-        inputContainer.value.innerText = newValue;
-        
-        nextTick(() => {
-            if (document.activeElement === inputContainer.value) {
-                const selection = window.getSelection();
-
-                if (selection) {
-                    const range = document.createRange();
-                    range.selectNodeContents(inputContainer.value);
-                    range.collapse(false)
-                    selection.removeAllRanges()
-                    selection.addRange(range)
-                }
-            }
-        });
-    }
-});
 
 const marked = new Marked(
   markedHighlight({
@@ -107,28 +48,24 @@ watch(chatMessages, async () => {
   }
 }, { deep: true });
 
-async function query() {
+async function handleSendMessage({ content, webSearch, code }) {
   if (!authStore.username || !authStore.id) {
     useNotify("Invalid username or id")
-    chatMessages.value.pop();
     return
   }
 
-  const chat = inputValue.value.trim();
+  const chat = content;
   if (chat === '') return;
 
   apiMessages.push({ 'role': 'user', 'content': chat });
   chatMessages.value.push({ role: 'user', content: marked.parse(chat) });
   
-  inputValue.value = '';
-  historyIndex.value = -1;
-
   chatMessages.value.push({ role: 'assistant', content: '', loading: true });
 
   const body = {
     'model': modelSelector.value,
-    'webSearch': searchActive.value,
-    'code': codeActive.value,
+    'webSearch': webSearch,
+    'code': code,
     'username': authStore.username,
     'userId': authStore.id.toString(),
     'messageId': messageId.value ? messageId.value.toString() : null,
@@ -257,7 +194,7 @@ onMounted(async () => {
   }
 
 
-  inputContainer.value.focus();
+  chatInput.value?.focus();
   await getModelList()
 });
 </script>
@@ -284,37 +221,12 @@ onMounted(async () => {
     </Transition>
 
 
-    <div class="input-area-main glass-card" :class="{ 'middle': !chatMessages || !chatMessages.length }">
-
-
-      <div class="input-area-sub">
-        <div
-          ref="inputContainer"
-          id="message-input"
-          placeholder="Type your message..."
-          contenteditable="true"
-          @input="handleInput"
-          @keydown.down.exact.prevent="navigateHistoryDown()"
-          @keydown.up.exact.prevent="navigateHistoryUp()"
-          @keydown.enter.exact.prevent="query"
-        ></div>
-      </div>
-
-
-      <div class="input-area-buttons">
-        <button @click='searchActive = !searchActive' :class="{ active: searchActive }">
-          <i class="fa-solid fa-globe"></i>
-          <span>Web Search</span>
-        </button>
-        <button @click='codeActive = !codeActive' :class="{ active: codeActive }">
-          <i class="fa-solid fa-code"></i>
-          <span>Code</span>
-        </button>
-        <button id="send-btn" @click="query"><i class="fa-solid fa-paper-plane"></i></button>
-      </div>
-
-
-    </div>
+    <ChatInput
+        ref="chatInput"
+        :user-message-history="userMessageHistory"
+        :is-centered="!chatMessages || !chatMessages.length"
+        @send-message="handleSendMessage"
+    />
 
 
   </div>
@@ -366,94 +278,6 @@ onMounted(async () => {
   align-items: center;
   padding: 0.5rem;
   border-radius: 16px;
-}
-
-.input-area-main {
-    position: absolute;
-    bottom: 1rem;
-    left: 20%;
-    width: 60%;
-    border-radius: 25px;
-    padding: 5px 15px;
-    transition: all 500ms ease-out;
-}
-
-.input-area-main.middle {
-  top: 50%;
-  transform: translateY(-50%);
-  bottom: auto;
-}
-
-input-area-sub {
-    display: flex;
-    align-items: center;
-}
-
-.active {
-  background: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
-}
-
-.input-area-buttons {
-  display: flex;
-  gap: 1rem;
-  margin: 0.25rem 0;
-}
-
-.input-area-buttons button {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: var(--bg-color-light);
-  color: var(--text-color);
-  border: 1px solid var(--border-color);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.input-area-buttons button.active {
-  background: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
-}
-
-.input-area-buttons button:last-child {
-    margin-left: auto;
-}
-
-#message-input {
-    flex-grow: 1;
-    padding: 5px 5px 0 5px;
-    border: none;
-    resize: none;
-    font-family: 'Sqgoe UI', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 1rem;
-    line-height: 1.5;
-    max-height: 200px;
-    min-height: 40px;
-    color: #f0f0f0;
-    background-color: transparent;
-    text-align: left;
-}
-
-#message-input:focus {
-    outline: none;
-}
-
-#send-btn {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 10px;
-    transition: color 0.2s ease;
-}
-
-#send-btn:hover {
-    color: #81b2f3;
 }
 
 .welcome-container {

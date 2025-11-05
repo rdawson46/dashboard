@@ -139,6 +139,10 @@ async function getJobList() {
             return
         }
 
+        if (data.totalItems && typeof data.totalItems === 'number') {
+            totalItems.value = data.totalItems
+        }
+
         jobs.value = data.jobs
         return 
     } catch (e) {

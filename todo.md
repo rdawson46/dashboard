@@ -1,7 +1,7 @@
 # To Do
 * job registration
 * set a default model
-* input to seperate component
+* loading animation gets stuck on tool calls
 * job page
 * notification/background job style
 * queue system for async tasks

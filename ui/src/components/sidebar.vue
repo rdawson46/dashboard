@@ -173,8 +173,9 @@ onMounted(async () => {
 }
 
 .sidebar.collapsed {
-  width: 100px;
-  min-width: 100px;
+  width: 80px;
+  min-width: 80px;
+  padding: 2rem 1rem;
 }
 
 .sidebar.collapsed .logo {
@@ -223,6 +224,8 @@ onMounted(async () => {
 
 .sidebar.collapsed .nav-links li a {
     justify-content: center;
+    padding: 1.2rem 1rem;
+    margin-bottom: 0.2rem;
 }
 
 .nav-links li a:hover, .nav-links li a.active {

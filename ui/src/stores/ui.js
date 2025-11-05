@@ -8,9 +8,9 @@ export const useUiStore = defineStore('ui', () => {
     isSidebarCollapsed.value = !isSidebarCollapsed.value
   }
 
-  const sidebarWidth = computed(() => (isSidebarCollapsed.value ? '100px' : '280px'))
+  const sidebarWidth = computed(() => (isSidebarCollapsed.value ? '80px' : '280px'))
   const sidebarWidthExpanded = '280px';
-  const sidebarWidthCollapsed = '100px';
+  const sidebarWidthCollapsed = '80px';
 
 
   return { isSidebarCollapsed, toggleSidebar, sidebarWidth, sidebarWidthCollapsed, sidebarWidthExpanded }

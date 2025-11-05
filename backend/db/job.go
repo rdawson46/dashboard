@@ -19,6 +19,7 @@ var (
 	deleteJobQuery = `DELETE FROM jobs WHERE id = ? AND user_id = ?`
 	peekJobQuery = `SELECT id, user_id, task, model, status, time, freq, result FROM jobs WHERE status = 'pending' AND datetime(time) <= CURRENT_TIMESTAMP ORDER BY created_at ASC LIMIT 1`
 	updateJobStatusQuery = `UPDATE jobs SET status = ? WHERE id = ?`
+	getCountQuery = `Select COUNT(*) FROM jobs WHERE user_id = ?`
 )
 
 func (r *sqliteRepo) CreateJob(ctx context.Context, userId string, job *jobs.Job) (*jobs.Job, error) {
@@ -199,4 +200,16 @@ func (r *sqliteRepo) Peek(ctx context.Context) (*jobs.Job, error) {
 	}
 
 	return &job, nil
+}
+
+
+func (r *sqliteRepo) GetJobCount(ctx context.Context, userId string) (int, error) {
+	r.logger.Info("Getting job count", "userId", userId)
+	var count int
+	err := r.db.QueryRowContext(ctx, getCountQuery, userId).Scan(&count)
+	if err != nil {
+		r.logger.Error("failed to get job count", "userId", userId, "error", err)
+		return 0, err
+	}
+	return count, nil
 }

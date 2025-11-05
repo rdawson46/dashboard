@@ -8,10 +8,8 @@ import { useNotify } from '@/composables/notify.js'
 
 const router = useRouter();
 
-// TODO: add total item count to api
 const totalItems = ref(0)
-const currentPage = ref(0)
-
+const currentPage = ref(1)
 
 const loading = ref(true)
 const jobs = ref([])
@@ -19,7 +17,8 @@ const limit = ref(10)
 const offset = ref(0)
 
 
-const hasMore = computed(() => jobs.value.length === limit.value)
+const hasMore = computed(() => maxIndex.value < totalItems.value)
+const maxIndex = computed(() => (currentPage.value - 1) * limit.value + jobs.value.length)
 
 const showCreateJobModal = ref(false)
 const showEditJobModal = ref(false)
@@ -57,9 +56,12 @@ async function deleteJob(id) {
             return
         }
 
-        // remove item from list by id
-        const modifiedJobs = jobs.value.filter(j => j.id != id);
-        jobs.value = modifiedJobs
+        totalItems.value--
+        if (jobs.value.length === 1 && currentPage.value > 1) {
+            await prevPage()
+        } else {
+            await getJobList()
+        }
 
         return 
     } catch (e) {
@@ -81,7 +83,10 @@ async function handleCreateJob(jobForm) {
         }
 
         const data = await res.json()
-        jobs.value.push(data)
+        totalItems.value += 1
+        if (jobs.value.length < limit.value) {
+            jobs.value.push(data)
+        }
     } catch (e) {
         useNotify('Unable to create job')
         console.error(e)
@@ -152,11 +157,13 @@ async function getJobList() {
 
 async function nextPage() {
     offset.value += limit.value
+    currentPage.value += 1
     getJobList()
 }
 
 async function prevPage() {
     offset.value = Math.max(offset.value - limit.value, 0)
+    currentPage.value -= 1
     getJobList()
 }
 

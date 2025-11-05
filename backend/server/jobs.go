@@ -286,6 +286,27 @@ func (s *Server) viewAllJobs(w http.ResponseWriter, r *http.Request) {
 		"length": jobLen,
 	}
 
+	if offset == 0 {
+		s.logger.Info(
+			"Pulling job count",
+			"userId", userId,
+		)
+
+		count, err := s.db.GetJobCount(ctx, userId)
+
+		if err != nil {
+			count = 0
+		}
+
+		s.logger.Info(
+			"Job count pulled",
+			"userId", userId,
+			"count", count,
+		)
+
+		result["totalItems"] = count
+	} 
+
     w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(result)

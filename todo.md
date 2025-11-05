@@ -1,8 +1,9 @@
 # To Do
 * job registration
+    - code jobs
+* finish job pagination
 * set a default model
 * loading animation gets stuck on tool calls
-* job page
 * notification/background job style
 * queue system for async tasks
     - tool execution

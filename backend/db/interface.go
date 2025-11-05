@@ -46,4 +46,5 @@ type JobDB interface {
     UpdateJob(ctx context.Context, job jobs.Job, userId string) (*jobs.Job, error)
     DeleteJob(ctx context.Context, jobId string, userId string) error
     Peek(ctx context.Context) (*jobs.Job, error)
+	GetJobCount(ctx context.Context, userId string) (int, error)
 }

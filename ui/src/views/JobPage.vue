@@ -2,16 +2,25 @@
 import Sidebar from '@/components/sidebar.vue'
 import CreateJobModal from '@/components/CreateJobModal.vue'
 import EditJobModal from '@/components/EditJobModal.vue'
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useNotify } from '@/composables/notify.js'
 
 const router = useRouter();
 
+// TODO: add total item count to api
+const totalItems = ref(0)
+const currentPage = ref(0)
+
+
+const loading = ref(true)
 const jobs = ref([])
 const limit = ref(10)
 const offset = ref(0)
-const loading = ref(true)
+
+
+const hasMore = computed(() => jobs.value.length === limit.value)
+
 const showCreateJobModal = ref(false)
 const showEditJobModal = ref(false)
 const selectedJob = ref(null)
@@ -137,6 +146,16 @@ async function getJobList() {
     }
 }
 
+async function nextPage() {
+    offset.value += limit.value
+    getJobList()
+}
+
+async function prevPage() {
+    offset.value = Math.max(offset.value - limit.value, 0)
+    getJobList()
+}
+
 onMounted(async () => {
     try {
         await getJobList()
@@ -190,6 +209,17 @@ onMounted(async () => {
                 <div v-if="loading">
                     <i  class="fa-solid fa-spinner fa-spin"></i>
                 </div>
+            </div>
+
+            <div class="pagination-controls">
+                <button class="pagination-btn" @click="prevPage" :disabled="offset === 0">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Prev</span>
+                </button>
+                <button class="pagination-btn" @click="nextPage" :disabled="!hasMore">
+                    <span>Next</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
             </div>
         </main>
         <CreateJobModal 
@@ -325,5 +355,36 @@ onMounted(async () => {
 .delete-btn:hover {
     background-color: #ef4444;
     border-color: #ef4444;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+    gap: 0.5rem;
+}
+
+.pagination-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:not(:disabled):hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 </style>

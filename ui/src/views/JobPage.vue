@@ -5,7 +5,9 @@ import EditJobModal from '@/components/EditJobModal.vue'
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useNotify } from '@/composables/notify.js'
+import { useUiStore } from '@/stores/ui';
 
+const uiStore = useUiStore();
 const router = useRouter();
 
 const totalItems = ref(0)
@@ -181,7 +183,7 @@ onMounted(async () => {
 <template>
     <div class="job-page-container">
         <Sidebar />
-        <main class="jobs-main-content glass-card">
+        <main class="jobs-main-content glass-card" :style="{ marginLeft: uiStore.sidebarWidth }">
             <header class="jobs-header">
                 <h1>Jobs</h1>
                 <button class="create-job-btn" @click="showCreateJobModal = true">
@@ -252,8 +254,6 @@ onMounted(async () => {
   display: flex;
   height: 100vh;
   width: 100vw;
-  padding: 1.5rem;
-  gap: 1.5rem;
   position: relative;
 }
 
@@ -262,6 +262,8 @@ onMounted(async () => {
     display: flex;
     flex-direction: column;
     padding: 2rem;
+    transition: margin-left 0.3s ease;
+    border-radius: 0;
 }
 
 .jobs-header {

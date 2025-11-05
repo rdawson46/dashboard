@@ -5,12 +5,13 @@ import { useAuthStore } from '@/stores/auth';
 import { RouterLink } from 'vue-router';
 import { useRouter } from 'vue-router';
 import { useNotify } from '@/composables/notify.js'
+import { useUiStore } from '@/stores/ui';
 
 const authStore = useAuthStore();
 const router = useRouter();
+const uiStore = useUiStore();
 
 const history = ref([]);
-const collapse = ref(false)
 const deletingChatId = ref(null);
 
 async function getHistory() {
@@ -95,37 +96,42 @@ onMounted(async () => {
 </script>
 
 <template>
-    <Transition name="slide-fade" mode="out-in" appear>
-        <nav v-if="!collapse" class="sidebar glass-card">
-            <div class="logo">
-                <i id="robot" class="fa-solid fa-robot"></i>
-                <h1>Chat</h1>
-                <button class="glass-card collapse-button" @click="collapse = !collapse">
-                    <i class="test fa-solid fa-bars"></i>
-                </button>
-            </div>
-            <ul class="nav-links">
-                <li>
-                    <RouterLink :to="{ name: 'New Chat' }" :class="{ 'active': false }">
-                    <i class="fa-solid fa-comments"></i><span>New Chat</span>
-                    </RouterLink>
-                </li>
+    <nav class="sidebar glass-card" :class="{ collapsed: uiStore.isSidebarCollapsed }">
+        <div class="logo">
+            <i id="robot" class="fa-solid fa-robot"></i>
+            <h1 v-show="!uiStore.isSidebarCollapsed">Chat</h1>
+        </div>
 
-                <li><a href="#"><i class="fa-solid fa-user"></i><span>Profile</span></a></li>
-                <li><a href="/models"><i class="fa-solid fa-cogs"></i><span>Models</span></a></li>
+        <ul class="nav-links">
+            <li>
+                <RouterLink :to="{ name: 'New Chat' }" :class="{ 'active': false }">
+                    <i class="fa-solid fa-comments"></i>
+                    <span class="link-text" v-show="!uiStore.isSidebarCollapsed">New Chat</span>
+                </RouterLink>
+            </li>
+            <li>
+                <a href="#">
+                    <i class="fa-solid fa-user"></i>
+                    <span class="link-text" v-show="!uiStore.isSidebarCollapsed">Profile</span>
+                </a>
+            </li>
+            <li>
+                <a href="/models">
+                    <i class="fa-solid fa-cogs"></i>
+                    <span class="link-text" v-show="!uiStore.isSidebarCollapsed">Models</span>
+                </a>
+            </li>
+            <li>
+                <RouterLink :to="{ name: 'jobs' }" :class="{ 'active': false }">
+                    <i class="fa-solid fa-clock"></i>
+                    <span class="link-text" v-show="!uiStore.isSidebarCollapsed">Jobs</span>
+                </RouterLink>
+            </li>
+        </ul>
 
-                <li>
-                    <RouterLink :to="{ name: 'jobs' }" :class="{ 'active': false }">
-                        <i class="fa-solid fa-clock"></i>
-                        <span>Jobs</span>
-                    </RouterLink>
-                </li>
-            </ul>
-
+        <div class="history-section" v-show="!uiStore.isSidebarCollapsed">
             <h3 class="history-title">History</h3>
             <div class="history">
-
-
                 <ul>
                     <li class="item" v-for="h in history" :key="h.id">
                         <RouterLink :to="{ name: 'Existing Chat', params: { id: h.id } }" class="history-link">
@@ -135,23 +141,19 @@ onMounted(async () => {
                         <i v-else class="fa-solid fa-trash space" @click="deleteChat(h.id)"></i>
                     </li>
                 </ul>
-
-
             </div>
-            <div class="logout">
-                <a @click="logout()">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    <span>Logout</span>
-                </a>
-            </div>
+        </div>
 
-        </nav>
-        <div v-else>
-            <button class="glass-card collapse-button" @click="collapse = !collapse">
-                <i class="test fa-solid fa-bars"></i>
+        <div class="sidebar-footer">
+            <a @click="logout()" class="logout-link">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span class="link-text" v-show="!uiStore.isSidebarCollapsed">Logout</span>
+            </a>
+            <button class="glass-card collapse-button" @click="uiStore.toggleSidebar">
+                <i class="fa-solid" :class="uiStore.isSidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
             </button>
         </div>
-    </Transition>
+    </nav>
 </template>
 
 <style scoped>
@@ -161,31 +163,46 @@ onMounted(async () => {
   width: 280px;
   min-width: 280px;
   padding: 2rem;
+  transition: all 0.3s ease;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  border-radius: 0;
+}
+
+.sidebar.collapsed {
+  width: 100px;
+  min-width: 100px;
+}
+
+.sidebar.collapsed .logo {
+    justify-content: center;
 }
 
 .logo {
   display: flex;
   align-items: center;
   margin-bottom: 1rem;
+  transition: all 0.3s ease;
 }
 
 .logo #robot {
   font-size: 2rem;
   color: var(--primary-color-light);
   margin-right: 1rem;
+  transition: margin 0.3s ease;
+}
+
+.sidebar.collapsed .logo #robot {
+    margin-right: 0;
 }
 
 .logo h1 {
   font-size: 1.5rem;
   font-weight: 700;
-}
-
-.collapse-button {
-    margin-left: auto;
-    margin-right: 0;
-    padding: 0.5rem;
-    font-size: 1.5rem;
-    background-color: var(--bg-color-light);
+  transition: all 0.2s ease;
 }
 
 .nav-links {
@@ -204,6 +221,10 @@ onMounted(async () => {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+.sidebar.collapsed .nav-links li a {
+    justify-content: center;
+}
+
 .nav-links li a:hover, .nav-links li a.active {
   background-color: var(--primary-color);
   color: white;
@@ -212,6 +233,22 @@ onMounted(async () => {
 .nav-links li a i {
   margin-right: 1rem;
   font-size: 1.2rem;
+  transition: margin 0.3s ease;
+}
+
+.sidebar.collapsed .nav-links li a i {
+    margin-right: 0;
+}
+
+.link-text {
+    transition: opacity 0.2s ease;
+}
+
+.history-section {
+    flex-grow: 1;
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .history {
@@ -245,6 +282,11 @@ onMounted(async () => {
     color: var(--text-color);
     text-decoration: none;
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+    display: inline-block;
 }
 
 .history ul li:hover {
@@ -269,7 +311,13 @@ onMounted(async () => {
   background: #6f6f6f;
 }
 
-.logout a {
+.sidebar-footer {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logout-link {
   display: flex;
   align-items: center;
   padding: 1rem;
@@ -279,17 +327,38 @@ onMounted(async () => {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.logout a:hover {
+.sidebar.collapsed .logout-link {
+    justify-content: center;
+}
+
+.logout-link:hover {
     background-color: #ef4444;
     color: white;
 }
 
-.logout a i {
+.logout-link i {
     margin-right: 1rem;
+    transition: margin 0.3s ease;
+}
+
+.sidebar.collapsed .logout-link i {
+    margin-right: 0;
+}
+
+.collapse-button {
+    margin-top: 1rem;
+    padding: 0.5rem;
+    font-size: 1.5rem;
+    background-color: var(--bg-color-light);
+    width: 100%;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
 }
 
 .item {
     display: flex;
+    align-items: center;
 }
 
 .item i {
@@ -299,16 +368,5 @@ onMounted(async () => {
 
 .item:hover i {
     visibility: visible;
-}
-
-.slide-fade-enter-active,
-.slide-fade-leave-active {
-  transition: all 0.2s ease-out;
-}
-
-.slide-fade-enter-from,
-.slide-fade-leave-to {
-  transform: translateX(-30px);
-  opacity: 0;
 }
 </style>

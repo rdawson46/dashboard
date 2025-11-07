@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/rdawson46/dashboard/jobs"
@@ -29,6 +30,10 @@ func (r *sqliteRepo) CreateJob(ctx context.Context, userId string, job *jobs.Job
 
 	if job.Status == "" {
 		job.Status = "pending"
+	}
+
+	if job.Time == "" {
+		job.Time = time.Now().UTC().Format(time.RFC3339)
 	}
 
 	task, err := json.Marshal(job.Task)

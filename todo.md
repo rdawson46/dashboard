@@ -1,7 +1,6 @@
 # To Do
 * job registration
     - code jobs
-* finish job pagination
 * set a default model
 * loading animation gets stuck on tool calls
 * notification/background job style

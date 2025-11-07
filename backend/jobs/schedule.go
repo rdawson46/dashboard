@@ -2,13 +2,89 @@ package jobs
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
+	"strings"
 	"time"
-    "database/sql"
 )
 
+/*
+Options:
+ - 15mins
+ - 30mins
+ - 1hour
+*/
 
 func FindReadyJobs(db *sql.DB) (Jobs, error) {
-	return nil, nil
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback() // Rollback on any error.
+
+	query := `SELECT id, name, user_id, task, model, status, time, freq, result FROM jobs 
+	WHERE status = 'pending' AND (
+		(freq = '15mins' AND datetime(time, '+15 minutes') <= CURRENT_TIMESTAMP) OR
+		(freq = '30mins' AND datetime(time, '+30 minutes') <= CURRENT_TIMESTAMP) OR
+		(freq = '1hour' AND datetime(time, '+1 hour') <= CURRENT_TIMESTAMP)
+	) ORDER BY created_at ASC`
+	rows, err := tx.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var jobList Jobs
+	var jobIds []string
+	for rows.Next() {
+		var job Job
+		var task, result, userId string
+
+		err := rows.Scan(&job.Id, &job.Name, &userId, &task, &job.Model, &job.Status, &job.Time, &job.Freq, &result)
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal([]byte(task), &job.Task)
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal([]byte(result), &job.Result)
+		if err != nil {
+			return nil, err
+		}
+
+		jobList = append(jobList, &job)
+		jobIds = append(jobIds, job.Id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// if we don't have any jobs, we can commit and return
+	if len(jobIds) == 0 {
+		return nil, tx.Commit()
+	}
+
+	updateQuery := "UPDATE jobs SET status = ? WHERE id IN (?" + strings.Repeat(",?", len(jobIds)-1) + ")"
+	args := make([]any, len(jobIds)+1)
+	args[0] = "running"
+	for i, id := range jobIds {
+		args[i+1] = id
+	}
+
+	_, err = tx.Exec(updateQuery, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return jobList, nil
 }
 
 
@@ -23,9 +99,15 @@ func (jp *JobPipeline) StartScheduler(ctx context.Context, jobs chan<- *Job) {
 		case <- ticker.C:
 			readyJobs, err := FindReadyJobs(jp.db)
 			if err != nil {
-				// TODO: add logger and log this error
+				jp.logger.Error(
+					"Error searching for ready jobs",
+					"err", err.Error(),
+				)
+
+				continue
 			}
 
+			jp.logger.Info("Found ready jobs", "count", len(readyJobs))
 			for _, job := range readyJobs {
 				jobs <- job
 			}

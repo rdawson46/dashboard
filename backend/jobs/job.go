@@ -27,7 +27,7 @@ func (s Status) isValidStatus() bool {
 
 type Job struct {
 	Name   string `json:"name"`
-	Result []string `json:"result"`
+	Result string `json:"result"`
 	Time   string `json:"time,omitempty"`
 	Freq   string `json:"freq,omitempty"`
 	// Tasks  []Task `json:"tasks"` 
@@ -49,34 +49,26 @@ func NewJob(task *Task, name, freq string) *Job {
 	}
 }
 
-func handleLlmTask(task Task) string {
+func handleLlmTask(task *Task) string {
 	return ""
 }
 
-func handleToolTask(task Task) string {
+func handleToolTask(task *Task) string {
 	return ""
 }
 
 
 func (j *Job) Run() {
-	results := make([]string, 0)
-
-	/*
-	for _, t := range j.Tasks {
-		var r string
-		switch t.T {
-		case llm:
-			r = handleLlmTask(t)
-		case tool:
-			r = handleLlmTask(t)
-		default:
-		}
-
-		results = append(results, r)
+	var r string
+	switch j.Task.T {
+	case llm:
+		r = handleLlmTask(j.Task)
+	case tool:
+		r = handleToolTask(j.Task)
+	default:
 	}
-	*/
 
-	j.Result = results
+	j.Result = r
 }
 
 func (j *Job) FillIn(form url.Values) error {

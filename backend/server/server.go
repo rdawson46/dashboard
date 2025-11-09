@@ -62,6 +62,7 @@ func InitialEnvCheck() {
 		"CODE_URL",
 		"DB_URL",
 		"JWT_KEY",
+		"DEFAULT_MODEL",
 	}
 
 	for _, env := range required_envs {

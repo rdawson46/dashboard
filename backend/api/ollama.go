@@ -2,9 +2,11 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 
 	"github.com/ollama/ollama/api"
 	ollamaModel "github.com/ollama/ollama/types/model"
@@ -38,9 +40,15 @@ func NewOllamaClient(_url string) (*OllamaClient, error) {
 
 // simple for now but will progress in complexity and will need to work with
 func (oc OllamaClient) newRequest(query string, stream *bool) *api.ChatRequest {
+	model := os.Getenv("DEFAULT_MODEL")
+
+	if model == "" {
+		return nil
+	}
+
+
     return &api.ChatRequest{
-        // Model: "qwen3:1.7b",
-        Model: "gemma3:1b",
+        Model: model,
         Messages: []api.Message{
             {
                 Role: "system",
@@ -68,9 +76,7 @@ func (oc OllamaClient) newRequestWithMessages(messages []api.Message, model stri
         },
     }, messages...)
 
-
     return &api.ChatRequest{
-        // Model: "qwen3:1.7b",
         Model: model,
         Messages: totalMessages,
         Options: map[string]any{
@@ -118,6 +124,10 @@ func (oc OllamaClient) GetShow(ctx context.Context, model string) (*ShowResponse
 
 func (oc OllamaClient) Chat(ctx context.Context, query string) (string, error) {
     req := oc.newRequest(query, &[]bool{false}[0])
+
+	if req == nil {
+		return "", errors.New("Unable to make request")
+	}
 
     var fullResponse string
     err := oc.client.Chat(ctx, req, func(resp api.ChatResponse) error {

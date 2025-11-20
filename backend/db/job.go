@@ -48,7 +48,7 @@ func (r *sqliteRepo) CreateJob(ctx context.Context, userId string, job *jobs.Job
 		return nil, err
 	}
 
-	_, err = r.db.ExecContext(ctx, createJobQuery, job.Id, job.Name, userId, string(task), job.Model, job.Status, job.Time, job.Freq, string(results))
+	_, err = r.Db.ExecContext(ctx, createJobQuery, job.Id, job.Name, userId, string(task), job.Model, job.Status, job.Time, job.Freq, string(results))
 	if err != nil {
 		r.logger.Error("failed to create job", "jobId", jobId, "userId", userId)
 		return nil, err
@@ -59,7 +59,7 @@ func (r *sqliteRepo) CreateJob(ctx context.Context, userId string, job *jobs.Job
 
 func (r *sqliteRepo) GetJob(ctx context.Context, jobId string, userId string) (*jobs.Job, error) {
 	r.logger.Info("Fetching job", "jobId", jobId, "userId", userId)
-	row := r.db.QueryRowContext(ctx, getJobQuery, jobId, userId)
+	row := r.Db.QueryRowContext(ctx, getJobQuery, jobId, userId)
 
 	var job jobs.Job
 	var task, result string
@@ -90,7 +90,7 @@ func (r *sqliteRepo) GetJob(ctx context.Context, jobId string, userId string) (*
 
 func (r *sqliteRepo) GetJobs(ctx context.Context, userId string, limit, offset int) (jobs.Jobs, error) {
 	r.logger.Info("Fetching jobs", "userId", userId, "limit", limit, "offset", offset)
-	rows, err := r.db.QueryContext(ctx, getJobsQuery, userId, limit, offset)
+	rows, err := r.Db.QueryContext(ctx, getJobsQuery, userId, limit, offset)
 	if err != nil {
 		r.logger.Error("failed to query jobs", "userId", userId, "limit", limit, "offset", offset)
 		return nil, err
@@ -140,7 +140,7 @@ func (r *sqliteRepo) UpdateJob(ctx context.Context, job jobs.Job, userId string)
 		return nil, err
 	}
 
-	_, err = r.db.ExecContext(ctx, updateJobQuery, string(task), job.Model, job.Status, job.Time, job.Freq, string(results), job.Id, userId)
+	_, err = r.Db.ExecContext(ctx, updateJobQuery, string(task), job.Model, job.Status, job.Time, job.Freq, string(results), job.Id, userId)
 	if err != nil {
 		r.logger.Error("failed to update job", "jobId", job.Id)
 		return nil, err
@@ -151,7 +151,7 @@ func (r *sqliteRepo) UpdateJob(ctx context.Context, job jobs.Job, userId string)
 
 func (r *sqliteRepo) DeleteJob(ctx context.Context, jobId string, userId string) error {
 	r.logger.Info("Deleting job", "jobId", jobId, "userId", userId)
-	_, err := r.db.ExecContext(ctx, deleteJobQuery, jobId, userId)
+	_, err := r.Db.ExecContext(ctx, deleteJobQuery, jobId, userId)
 	if err != nil {
 		r.logger.Error("failed to delete job", "jobId", jobId, "userId", userId)
 	}
@@ -160,7 +160,7 @@ func (r *sqliteRepo) DeleteJob(ctx context.Context, jobId string, userId string)
 
 func (r *sqliteRepo) Peek(ctx context.Context) (*jobs.Job, error) {
 	r.logger.Info("Peeking for a job")
-	tx, err := r.db.BeginTx(ctx, nil)
+	tx, err := r.Db.BeginTx(ctx, nil)
 	if err != nil {
 		r.logger.Error("failed to begin transaction")
 		return nil, err
@@ -211,7 +211,7 @@ func (r *sqliteRepo) Peek(ctx context.Context) (*jobs.Job, error) {
 func (r *sqliteRepo) GetJobCount(ctx context.Context, userId string) (int, error) {
 	r.logger.Info("Getting job count", "userId", userId)
 	var count int
-	err := r.db.QueryRowContext(ctx, getCountQuery, userId).Scan(&count)
+	err := r.Db.QueryRowContext(ctx, getCountQuery, userId).Scan(&count)
 	if err != nil {
 		r.logger.Error("failed to get job count", "userId", userId, "error", err)
 		return 0, err

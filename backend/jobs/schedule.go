@@ -108,9 +108,11 @@ func (jp *JobPipeline) StartScheduler(ctx context.Context, jobs chan<- *Job) {
 			}
 
 			jp.logger.Info("Found ready jobs", "count", len(readyJobs))
+			/*
 			for _, job := range readyJobs {
 				jobs <- job
 			}
+			*/
 		}
 	}
 }

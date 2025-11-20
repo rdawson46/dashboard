@@ -16,11 +16,11 @@ import (
 var ErrDatabaseError = errors.New("database error")
 
 type sqliteRepo struct {
-    db *sql.DB
+    Db *sql.DB
 	logger *log.Logger
 }
 
-func NewSqliteRepository(log *log.Logger) (Repository, error) {
+func NewSqliteRepository(log *log.Logger) (*sqliteRepo, error) {
 	l := log.WithPrefix("")
 	db_url := os.Getenv("DB_URL")
 
@@ -51,12 +51,12 @@ func NewSqliteRepository(log *log.Logger) (Repository, error) {
 	l.Info("DB initiated")
 
     return &sqliteRepo{
-		db: db,
+		Db: db,
 		logger: l,
 	}, nil
 }
 
 func (r *sqliteRepo) Close() error {
 	r.logger.Info("Closing DB")
-	return r.db.Close()
+	return r.Db.Close()
 }

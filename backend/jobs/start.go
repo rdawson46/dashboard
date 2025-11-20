@@ -24,6 +24,6 @@ func (jp *JobPipeline) StartJobCheck(ctx context.Context, workers int) {
     j := make(chan *Job, 10)
     worker_logger := jp.logger.WithPrefix("Worker")
 
-    go StartWorkerPool(ctx, j, workers, worker_logger)
+    go StartWorkerPool(ctx, j, workers, worker_logger, jp.db)
     jp.StartScheduler(ctx, j)
 }

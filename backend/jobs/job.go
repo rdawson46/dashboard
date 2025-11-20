@@ -49,17 +49,35 @@ func NewJob(task *Task, name, freq string) *Job {
 	}
 }
 
-func handleLlmTask(task *Task) string {
-	return ""
+type taskResultType struct {
+	value string
+	status Status
 }
 
-func handleToolTask(task *Task) string {
-	return ""
+func handleLlmTask(task *Task) taskResultType {
+	return taskResultType{
+
+	}
 }
 
+func handleToolTask(task *Task) taskResultType {
+	return taskResultType{
 
-func (j *Job) Run() {
-	var r string
+	}
+}
+
+/*
+
+  1. Update status to running
+  2. run
+  3. catch value or error
+  4. save value
+  5. update status to failed or done
+
+*/
+
+func (j *Job) Run() taskResultType {
+	var r taskResultType
 	switch j.Task.T {
 	case llm:
 		r = handleLlmTask(j.Task)
@@ -68,7 +86,9 @@ func (j *Job) Run() {
 	default:
 	}
 
-	j.Result = r
+	j.Result = r.value
+
+	return r
 }
 
 func (j *Job) FillIn(form url.Values) error {

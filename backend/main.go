@@ -1,14 +1,16 @@
 package main
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/charmbracelet/log"
 	"github.com/joho/godotenv"
-	"github.com/rdawson46/dashboard/server"
 	"github.com/rdawson46/dashboard/db"
+	"github.com/rdawson46/dashboard/jobs"
+	"github.com/rdawson46/dashboard/server"
 )
 
 // TODO: need to run migrations on startup
@@ -17,16 +19,21 @@ func run() error {
         ReportCaller: true,
     })
 
-	db, err := db.NewSqliteRepository(logger)
+	sqliteDb, err := db.NewSqliteRepository(logger)
 
 	if err != nil {
 		return err
 	}
+
+	jp := jobs.NewJobPipeline(logger, sqliteDb.Db)
+
+	ctx := context.Background()
+	go jp.StartJobCheck(ctx, 5)
 	
-	defer db.Close()
+	defer sqliteDb.Close()
 
     config := server.NewConfig(8000, 300, 100, 100)
-    s := server.NewServer(config, db, logger)
+    s := server.NewServer(config, db.Repository(sqliteDb), logger)
 
     if err := s.Start(); err != nil {
         log.Fatal(err)

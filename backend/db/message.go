@@ -42,7 +42,7 @@ var (
 func (r *sqliteRepo) GetMessage(ctx context.Context, userId, messageId string) ([]ollama.Message, error) {
 	var messagesStr string
 	r.logger.Info("Fetching message", "messageId", messageId, "userId", userId)
-	err := r.db.QueryRowContext(ctx, getChatbyIdQuery, messageId, userId).Scan(&messagesStr)
+	err := r.Db.QueryRowContext(ctx, getChatbyIdQuery, messageId, userId).Scan(&messagesStr)
 
 	if err != nil {
 		r.logger.Error("Error fetching message", "messageId", messageId, "userId", userId)
@@ -77,7 +77,7 @@ func (r *sqliteRepo) CreateMessage(ctx context.Context, userId, model string, me
 
 	messageID := uuid.New().String()
 
-	_, err = r.db.Exec(createMessageQuery, messageID, userId, string(messageString), desc, model)
+	_, err = r.Db.Exec(createMessageQuery, messageID, userId, string(messageString), desc, model)
 
 	if err != nil {
 		r.logger.Error("failed to create message", "messageId", messageID, "userId", userId)
@@ -89,7 +89,7 @@ func (r *sqliteRepo) CreateMessage(ctx context.Context, userId, model string, me
 
 func (r *sqliteRepo) GetDescriptions(ctx context.Context, userId string, limit, offset int) (Descriptions, error) {
 	r.logger.Info("Fetching descriptions", "userId", userId, "limit", limit, "offset", offset)
-	rows, err := r.db.QueryContext(ctx, getDescriptionsQuery, userId, limit, offset)
+	rows, err := r.Db.QueryContext(ctx, getDescriptionsQuery, userId, limit, offset)
 
 	if err != nil {
 		r.logger.Error("failed to query descriptions", "userId", userId, "limit", limit, "offset", offset)
@@ -122,7 +122,7 @@ func (r *sqliteRepo) GetDescriptions(ctx context.Context, userId string, limit, 
 
 func (r *sqliteRepo) DeleteMessage(ctx context.Context, id string, user_id string) (bool, error) {
 	r.logger.Info("Deleting message", "messageId", id, "userId", user_id)
-	result, err := r.db.Exec(deleteMessageQuery, id, user_id)
+	result, err := r.Db.Exec(deleteMessageQuery, id, user_id)
 
 	if err != nil {
 		r.logger.Error("failed to delete message", "messageId", id, "userId", user_id)
@@ -151,7 +151,7 @@ func (r *sqliteRepo) AddMessage(ctx context.Context, messageId, userId, model st
 		return false, err
 	}
 
-	result, err := r.db.Exec(updateMessageQuery, string(messageString), model, messageId, userId)
+	result, err := r.Db.Exec(updateMessageQuery, string(messageString), model, messageId, userId)
 
 	if err != nil {
 		r.logger.Error("failed to update message", "messageId", messageId, "userId", userId)

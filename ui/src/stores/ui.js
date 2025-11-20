@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 
 export const useUiStore = defineStore('ui', () => {
-  const isSidebarCollapsed = ref(false)
+  const isSidebarCollapsed = ref(true)
 
   function toggleSidebar() {
     isSidebarCollapsed.value = !isSidebarCollapsed.value

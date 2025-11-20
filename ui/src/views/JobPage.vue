@@ -61,6 +61,8 @@ async function deleteJob(id) {
         totalItems.value--
         if (jobs.value.length === 1 && currentPage.value > 1) {
             await prevPage()
+        } else if(totalItems.value == 0) {
+            jobs.value = []
         } else {
             await getJobList()
         }

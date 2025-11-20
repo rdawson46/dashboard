@@ -183,7 +183,7 @@ onMounted(async () => {
 <template>
     <div class="job-page-container">
         <Sidebar />
-        <main class="jobs-main-content glass-card" :style="{ marginLeft: uiStore.sidebarWidth }">
+        <main class="jobs-main-content" :style="{ marginLeft: uiStore.sidebarWidth }">
             <header class="jobs-header">
                 <h1>Jobs</h1>
                 <button class="create-job-btn" @click="showCreateJobModal = true">

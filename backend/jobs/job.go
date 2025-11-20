@@ -56,7 +56,8 @@ type taskResultType struct {
 
 func handleLlmTask(task *Task) taskResultType {
 	return taskResultType{
-
+		value: "Not implemented yet",
+		status: StatusCompleted,
 	}
 }
 

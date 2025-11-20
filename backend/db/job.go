@@ -100,9 +100,9 @@ func (r *sqliteRepo) GetJobs(ctx context.Context, userId string, limit, offset i
 	var jobList jobs.Jobs
 	for rows.Next() {
 		var job jobs.Job
-		var task, result string
+		var task string
 
-		err := rows.Scan(&job.Id, &job.Name, &userId, &task, &job.Model, &job.Status, &job.Time, &job.Freq, &result)
+		err := rows.Scan(&job.Id, &job.Name, &userId, &task, &job.Model, &job.Status, &job.Time, &job.Freq, &job.Result)
 		if err != nil {
 			r.logger.Error("failed to scan job", "userId", userId)
 			return nil, err
@@ -111,12 +111,6 @@ func (r *sqliteRepo) GetJobs(ctx context.Context, userId string, limit, offset i
 		err = json.Unmarshal([]byte(task), &job.Task)
 		if err != nil {
 			r.logger.Error("failed to unmarshal task", "userId", userId)
-			return nil, err
-		}
-
-		err = json.Unmarshal([]byte(result), &job.Result)
-		if err != nil {
-			r.logger.Error("failed to unmarshal result", "userId", userId)
 			return nil, err
 		}
 

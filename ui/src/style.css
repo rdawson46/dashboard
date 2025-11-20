@@ -92,12 +92,11 @@ body {
 }
 
 .glass-card {
-  background-color: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
+  background-color: var(--bg-color-light);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 2rem;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 button {

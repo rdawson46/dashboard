@@ -1,9 +1,14 @@
 package jobs
 
 import (
+	"context"
 	"errors"
 	"net/url"
+	"os"
 	"strings"
+
+
+	api "github.com/rdawson46/dashboard/api"
 )
 
 type Status string
@@ -54,9 +59,47 @@ type taskResultType struct {
 	status Status
 }
 
-func handleLlmTask(task *Task) taskResultType {
+func handleLLMTask(task *Task) taskResultType {
+	query := task.Query
+
+	if query == "" {
+		return taskResultType{
+			value: "Empty query",
+			status: StatusFailed,
+		}
+	}
+
+	url := os.Getenv("OLLAMA_URL")
+	
+	if url == "" {
+		return taskResultType{
+			value: "Server Issue",
+			status: StatusFailed,
+		}
+	}
+
+    oc, err := api.NewOllamaClient(url)
+
+	if err != nil {
+		return taskResultType{
+			value: "Server error",
+			status: StatusFailed,
+		}
+	}
+
+	ctx := context.Background()
+
+	res, err := oc.Chat(ctx, query)
+
+	if err != nil {
+		return taskResultType{
+			value: "Server error",
+			status: StatusFailed,
+		}
+	}
+
 	return taskResultType{
-		value: "Not implemented yet",
+		value: res,
 		status: StatusCompleted,
 	}
 }
@@ -81,7 +124,7 @@ func (j *Job) Run() taskResultType {
 	var r taskResultType
 	switch j.Task.T {
 	case llm:
-		r = handleLlmTask(j.Task)
+		r = handleLLMTask(j.Task)
 	case tool:
 		r = handleToolTask(j.Task)
 	default:

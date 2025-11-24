@@ -23,6 +23,7 @@ func FindReadyJobs(db *sql.DB) (Jobs, error) {
 	}
 	defer tx.Rollback() // Rollback on any error.
 
+	// TODO: will have to rework so that jobs will repeat
 	query := fmt.Sprintf(`SELECT id, name, user_id, task, model, status, time, freq, result FROM jobs 
 	WHERE status = '%s' AND (
 		(freq = '15mins' AND datetime(time, '+15 minutes') <= CURRENT_TIMESTAMP) OR
@@ -103,7 +104,13 @@ func (jp *JobPipeline) StartScheduler(ctx context.Context, jobs chan<- *Job) {
 				continue
 			}
 
-			jp.logger.Info("Found ready jobs", "count", len(readyJobs))
+			count := len(readyJobs)
+
+			if count > 0 {
+				jp.logger.Info("Found ready jobs", "count", len(readyJobs))
+			} else {
+				jp.logger.Info("No ready jobs found")
+			}
 
 			for _, job := range readyJobs {
 				jobs <- job

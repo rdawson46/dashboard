@@ -1,6 +1,9 @@
 # To Do
+* queue around ollama to prevent overloading
 * job registration
-    - code jobs
+    - code job creation
+    - handle functions jobs
+        - logging within handle functions
 * loading animation gets stuck on tool calls
 * notification/background job style
 * queue system for async tasks

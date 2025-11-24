@@ -2,6 +2,7 @@
 import Sidebar from '@/components/sidebar.vue'
 import CreateJobModal from '@/components/CreateJobModal.vue'
 import EditJobModal from '@/components/EditJobModal.vue'
+import ViewJobModal from '@/components/ViewJobModal.vue';
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useNotify } from '@/composables/notify.js'
@@ -24,16 +25,61 @@ const maxIndex = computed(() => (currentPage.value - 1) * limit.value + jobs.val
 
 const showCreateJobModal = ref(false)
 const showEditJobModal = ref(false)
+const showViewJobModal = ref(false)
 const selectedJob = ref(null)
+
+async function viewJob(jobId) {
+    const params = new URLSearchParams()
+    params.append('jobId', jobId)
+
+    const url = `/api/viewJob?${params}`
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            credentials: 'include',
+        })
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                await router.replace('/login')
+                return
+            }
+            useNotify(`Error: ${response.status} ${response.statusText}`);
+            return;
+        }
+
+        const data = await response.json()
+
+        if (data.status && data.status !== "ok") {
+            useNotify("Failed to get job")
+            return
+        }
+
+        console.log(data)
+    } catch (e) {
+
+    }
+}
+
+async function runJob(jobId) {
+    console.log('run job')
+}
+
+// TODO: show call view job to pull latest and update within job list
+function openViewJobModal(job) {
+    selectedJob.value = job
+    showViewJobModal.value = true
+}
 
 function openEditJobModal(job) {
     selectedJob.value = job
     showEditJobModal.value = true
 }
 
-async function deleteJob(id) {
+async function deleteJob(jobId) {
     const params = new URLSearchParams()
-    params.append('jobId', id)
+    params.append('jobId', jobId)
 
     const url = `/api/deleteJob?${params}`
 
@@ -200,7 +246,6 @@ onMounted(async () => {
                             <th>Job Name</th>
                             <th>Type</th>
                             <th>Status</th>
-                            <!--<th>Date</th>-->
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -210,9 +255,9 @@ onMounted(async () => {
                                 <td>{{job.name}}</td>
                                 <td>{{job.task.task_type}}</td>
                                 <td><span class="status" :class="[`status-${job.status.toLowerCase()}`]">{{job.status}}</span></td>
-                                <!--<td>{{job.date}}</td>-->
                                 <td class="action-buttons">
-                                    <button class="action-btn"><i class="fa-solid fa-play"></i></button>
+                                    <button class="action-btn" @click="openViewJobModal(job)"><i class="fa-solid fa-eye"></i></button>
+                                    <button class="action-btn" @click="runJob(job.id)"><i class="fa-solid fa-play"></i></button>
                                     <button class="action-btn" @click="openEditJobModal(job)"><i class="fa-solid fa-pencil"></i></button>
                                     <button class="action-btn delete-btn" @click="deleteJob(job.id)"><i class="fa-solid fa-trash"></i></button>
                                 </td>
@@ -247,6 +292,11 @@ onMounted(async () => {
             :job="selectedJob"
             @close="showEditJobModal = false"
             @edit-job="handleEditJob"
+        />
+        <ViewJobModal
+            v-if="showViewJobModal"
+            :job="selectedJob"
+            @close="showViewJobModal = false"
         />
     </div>
 </template>

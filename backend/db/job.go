@@ -62,9 +62,9 @@ func (r *sqliteRepo) GetJob(ctx context.Context, jobId string, userId string) (*
 	row := r.Db.QueryRowContext(ctx, getJobQuery, jobId, userId)
 
 	var job jobs.Job
-	var task, result string
+	var task string
 
-	err := row.Scan(&job.Id, &userId, &task, &job.Model, &job.Status, &job.Time, &job.Freq, &result)
+	err := row.Scan(&job.Id, &userId, &task, &job.Model, &job.Status, &job.Time, &job.Freq, &job.Result)
 	if err != nil {
 		r.logger.Error("failed to scan job", "jobId", jobId, "userId", userId)
 		if errors.Is(err, sql.ErrNoRows) {
@@ -76,12 +76,6 @@ func (r *sqliteRepo) GetJob(ctx context.Context, jobId string, userId string) (*
 	err = json.Unmarshal([]byte(task), &job.Task)
 	if err != nil {
 		r.logger.Error("failed to unmarshal task", "jobId", jobId, "userId", userId)
-		return nil, err
-	}
-
-	err = json.Unmarshal([]byte(result), &job.Result)
-	if err != nil {
-		r.logger.Error("failed to unmarshal result", "jobId", jobId, "userId", userId)
 		return nil, err
 	}
 

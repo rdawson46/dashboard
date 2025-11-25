@@ -116,10 +116,10 @@ onMounted(async () => {
                 </a>
             </li>
             <li>
-                <a href="/models">
+                <RouterLink :to="{ name: 'Models' }" :class="{ 'active': false }">
                     <i class="fa-solid fa-cogs"></i>
                     <span class="link-text" v-show="!uiStore.isSidebarCollapsed">Models</span>
-                </a>
+                </RouterLink>
             </li>
             <li>
                 <RouterLink :to="{ name: 'jobs' }" :class="{ 'active': false }">

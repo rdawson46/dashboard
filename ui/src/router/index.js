@@ -5,6 +5,7 @@ import RegisterPage from '@/views/RegisterPage.vue'
 import ChatPage from '@/views/ChatPage.vue'
 import NotFoundPage from '@/views/NotFoundPage.vue'
 import JobPage from '@/views/JobPage.vue'
+import ModelsPage from '@/views/ModelsPage.vue'
 
 import { useAuthStore } from '@/stores/auth';
 
@@ -35,7 +36,13 @@ const routes = [
         props: true,
         meta: { requiresAuth: true }
     },
-    { path: '/:pathMatch(.*)*', component: NotFoundPage }
+    {
+        path: '/models',
+        component: ModelsPage,
+        name: 'Models',
+        meta: { requiresAuth: true }
+    },
+    { path: '/:pathMatch(.*)*', component: NotFoundPage },
 ]
 
 export const router = createRouter({

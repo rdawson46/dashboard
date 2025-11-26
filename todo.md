@@ -1,4 +1,5 @@
 # To Do
+* finish models page
 * queue around ollama to prevent overloading
 * job registration
     - code job creation
@@ -9,8 +10,6 @@
 * queue system for async tasks
     - tool execution
     - notification
-* LLM info page
-* model pages
 * file uploads
 * display:
     - reasoning/thinking

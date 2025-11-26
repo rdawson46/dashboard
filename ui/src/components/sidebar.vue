@@ -104,6 +104,11 @@ onMounted(async () => {
 
         <ul class="nav-links">
             <li>
+                <button class="glass-card collapse-button" @click="uiStore.toggleSidebar">
+                    <i class="fa-solid" :class="uiStore.isSidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+                </button>
+            </li>
+            <li>
                 <RouterLink :to="{ name: 'New Chat' }" :class="{ 'active': false }">
                     <i class="fa-solid fa-comments"></i>
                     <span class="link-text" v-show="!uiStore.isSidebarCollapsed">New Chat</span>
@@ -149,9 +154,6 @@ onMounted(async () => {
                 <i class="fa-solid fa-right-from-bracket"></i>
                 <span class="link-text" v-show="!uiStore.isSidebarCollapsed">Logout</span>
             </a>
-            <button class="glass-card collapse-button" @click="uiStore.toggleSidebar">
-                <i class="fa-solid" :class="uiStore.isSidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
-            </button>
         </div>
     </nav>
 </template>

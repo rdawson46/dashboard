@@ -10,6 +10,7 @@ type Repository interface {
     MessageDB 
     UserDB
     JobDB
+	FileDb
 	Close() error
 }
 
@@ -47,4 +48,8 @@ type JobDB interface {
     DeleteJob(ctx context.Context, jobId string, userId string) error
     Peek(ctx context.Context) (*jobs.Job, error)
 	GetJobCount(ctx context.Context, userId string) (int, error)
+}
+
+type FileDb interface {
+	SaveFile(ctx context.Context, userId, fileName, contentType, content string) (string, error)
 }

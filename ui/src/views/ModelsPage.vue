@@ -52,6 +52,11 @@ async function getModelList() {
   }
 }
 
+function formatNumber(value) {
+    if (typeof value !== 'number') return 'N/A'
+    return value.toLocaleString('en-US')
+}
+
 async function getModelInfo() {
     if (!modelSelector.value) return;
 
@@ -77,9 +82,14 @@ async function getModelInfo() {
         let arch = modelInfo['general.architecture'] || 'N/A'
 
         architecture.value = arch
-        parameters.value = modelInfo['general.size_label'] || 'N/A'
-        contextLength.value = modelInfo[`${arch}.context_length`] || 'N/A'
-        embeddingLength.value = modelInfo[`${arch}.embedding_length`] || 'N/A'
+
+        let param = modelInfo['general.parameter_count']
+        let context = modelInfo[`${arch}.context_length`]
+        let emb = modelInfo[`${arch}.embedding_length`] 
+
+        parameters.value = formatNumber(param)
+        contextLength.value = formatNumber(context)
+        embeddingLength.value = formatNumber(emb)
         quantization.value = 'Coming Soon'
 
         capabilities.value = cap

@@ -86,7 +86,7 @@ func FindReadyJobs(db *sql.DB) (Jobs, error) {
 
 
 func (jp *JobPipeline) StartScheduler(ctx context.Context, jobs chan<- *Job) {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
 	for {

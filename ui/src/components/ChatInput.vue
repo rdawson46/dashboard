@@ -129,6 +129,10 @@ defineExpose({
           <i class="fa-solid fa-code"></i>
           <span>Code</span>
         </button>
+        <button :class="{ active: codeActive }">
+          <i class="fa-solid fa-file-arrow-up"></i>
+          <span>File Upload</span>
+        </button>
         <button id="send-btn" @click="sendMessage"><i class="fa-solid fa-paper-plane"></i></button>
       </div>
     </div>

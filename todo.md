@@ -1,16 +1,15 @@
 # To Do
-* finish models page
+* file uploads
 * queue around ollama to prevent overloading
 * job registration
     - code job creation
     - handle functions jobs
         - logging within handle functions
-* loading animation gets stuck on tool calls
 * notification/background job style
 * queue system for async tasks
     - tool execution
     - notification
-* file uploads
+* loading animation gets stuck on tool calls
 * display:
     - reasoning/thinking
 * tools (**web search** and code execution)

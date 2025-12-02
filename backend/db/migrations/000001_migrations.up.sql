@@ -32,6 +32,27 @@ CREATE TABLE IF NOT EXISTS jobs (
     FOREIGN KEY(user_id) REFERENCES users(id)
 );
 
+CREATE TABLE IF NOT EXISTS files (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    content_type TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+CREATE TRIGGER IF NOT EXISTS update_files_updated_at
+AFTER UPDATE ON files
+FOR EACH ROW
+BEGIN
+    UPDATE files
+    SET
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = NEW.id;
+END;
+
 CREATE TRIGGER IF NOT EXISTS update_jobs_updated_at
 AFTER UPDATE ON jobs
 FOR EACH ROW

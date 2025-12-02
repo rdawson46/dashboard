@@ -58,6 +58,13 @@ func addRoutes(h *http.ServeMux, s *Server) {
 	addAuthRoute("/api/deleteJob", s.deleteJob)
 	addAuthRoute("/api/updateJob", s.updateJob)
 	addAuthRoute("/api/viewJob", s.viewJob)
+
+	// file routes
+
+	addAuthRoute("/api/uploadFile", s.uploadFile)
+	addAuthRoute("/api/getFileList", s.getFileList)
+	addAuthRoute("/api/getFile", s.getFile)
+	addAuthRoute("/api/deleteFile", s.deleteFile)
 }
 
 // =======================================

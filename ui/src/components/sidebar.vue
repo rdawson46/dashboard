@@ -115,10 +115,10 @@ onMounted(async () => {
                 </RouterLink>
             </li>
             <li>
-                <a href="#">
-                    <i class="fa-solid fa-user"></i>
-                    <span class="link-text" v-show="!uiStore.isSidebarCollapsed">Profile</span>
-                </a>
+                <RouterLink :to="{ name: 'Files' }" :class="{ 'active': false }">
+                    <i class="fa-solid fa-folder-tree"></i>
+                    <span class="link-text" v-show="!uiStore.isSidebarCollapsed">Files</span>
+                </RouterLink>
             </li>
             <li>
                 <RouterLink :to="{ name: 'Models' }" :class="{ 'active': false }">

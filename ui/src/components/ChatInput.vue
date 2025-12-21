@@ -1,6 +1,7 @@
 <script setup>
-import { ref, watch, nextTick } from 'vue';
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { useNotify } from '@/composables/notify.js';
+import FileOptionsMenu from './FileOptionsMenu.vue';
 
 const props = defineProps({
   userMessageHistory: {
@@ -20,6 +21,9 @@ const codeActive = ref(false);
 const isUploading = ref(false);
 const fileInput = ref(null);
 const uploadedFiles = ref([]);
+const showFileOptions = ref(false);
+const ragActive = ref(false);
+const fileOptionsContainer = ref(null);
 
 const inputContainer = ref(null);
 const inputValue = ref('');
@@ -34,9 +38,28 @@ const handleInput = (e) => {
     }
 };
 
-const triggerFileUpload = () => {
+const triggerFileOptions = () => {
+  showFileOptions.value = !showFileOptions.value;
+};
+
+const handleTriggerUpload = () => {
+  showFileOptions.value = false;
   fileInput.value.click();
 };
+
+const handleClickOutside = (event) => {
+    if (fileOptionsContainer.value && !fileOptionsContainer.value.contains(event.target)) {
+        showFileOptions.value = false;
+    }
+};
+
+onMounted(() => {
+  document.addEventListener('mousedown', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('mousedown', handleClickOutside);
+});
 
 const uploadFile = async (event) => {
     const files = event.target.files;
@@ -134,6 +157,7 @@ function sendMessage() {
     content: message,
     webSearch: searchActive.value,
     code: codeActive.value,
+    useRag: ragActive.value,
   };
 
   if (uploadedFiles.value.length > 0) {
@@ -145,7 +169,6 @@ function sendMessage() {
   inputValue.value = '';
   historyIndex.value = -1;
   pristineInput = '';
-  uploadedFiles.value = [];
 
   nextTick(() => {
     if(inputContainer.value) {
@@ -186,23 +209,26 @@ defineExpose({
 
             <div class="input-area-buttons">
                 <button @click='searchActive = !searchActive' :class="{ active: searchActive }">
-                <i class="fa-solid fa-globe"></i>
-                <span>Web Search</span>
+                    <i class="fa-solid fa-globe"></i>
+                    <span>Web Search</span>
                 </button>
                 <button @click='codeActive = !codeActive' :class="{ active: codeActive }">
-                <i class="fa-solid fa-code"></i>
-                <span>Code</span>
+                    <i class="fa-solid fa-code"></i>
+                    <span>Code</span>
                 </button>
-                <button @click="triggerFileUpload" :disabled="isUploading">
-                <template v-if="isUploading">
-                    <i class="fa-solid fa-spinner fa-spin"></i>
-                    <span>Uploading...</span>
-                </template>
-                <template v-else>
-                    <i class="fa-solid fa-file-arrow-up"></i>
-                    <span>File Upload</span>
-                </template>
-                </button>
+                
+                <div ref="fileOptionsContainer" class="file-options-wrapper">
+                    <button @click="triggerFileOptions" :disabled="isUploading">
+                        <i class="fa-solid fa-file-arrow-up"></i>
+                        <span>File Options</span>
+                    </button>
+                    <FileOptionsMenu
+                        :open="showFileOptions"
+                        v-model:rag="ragActive"
+                        @trigger-upload="handleTriggerUpload"
+                    />
+                </div>
+
                 <input type="file" ref="fileInput" @change="uploadFile" style="display: none" multiple />
                 <button id="send-btn" @click="sendMessage"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
@@ -247,12 +273,12 @@ defineExpose({
 .file-pill {
     display: flex;
     align-items: center;
-    background: var(--bg-color-light);
+    background: var(--primary-color);
     border-radius: 20px;
     padding: 0.2rem 0.6rem;
     font-size: 0.8rem;
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
+    color: white;
+    border: 1px solid var(--primary-color);
     max-width: 200px;
 }
 
@@ -269,7 +295,7 @@ defineExpose({
 .file-pill .close-btn {
     background: none;
     border: none;
-    color: var(--text-color);
+    color: white;
     cursor: pointer;
     font-size: 1rem;
     padding: 0;
@@ -277,7 +303,7 @@ defineExpose({
 }
 
 .file-pill .close-btn:hover {
-    color: var(--primary-color);
+    color: var(--text-color);
 }
 
 .input-area-sub {
@@ -295,6 +321,11 @@ defineExpose({
   display: flex;
   gap: 1rem;
   margin: 0.25rem 0;
+  align-items: center;
+}
+
+.file-options-wrapper {
+    position: relative;
 }
 
 .input-area-buttons button {

@@ -54,6 +54,7 @@ type FileDb interface {
 	SaveFile(ctx context.Context, userId, fileName, contentType, content string) (string, error)
 	GetFile(ctx context.Context, fileId, userId string) (*File, error)
 	GetFiles(ctx context.Context, userId string, limit, offset int) ([]*File, error)
+	GetFilesCount(ctx context.Context, userId string) (int, error)
 	DeleteFile(ctx context.Context, fileId, userId string) error
 	UpdateFile(ctx context.Context, fileId, userId, fileName, contentType, content string) error
 }

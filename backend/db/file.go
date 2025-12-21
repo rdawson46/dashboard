@@ -12,11 +12,12 @@ import (
 )
 
 var (
-	saveFileQuery   = `INSERT INTO files (id, user_id, file_name, content_type, content) VALUES (?, ?, ?, ?, ?)`
-	getFileQuery    = `SELECT id, user_id, file_name, content_type, content, created_at, updated_at FROM files WHERE id = ? AND user_id = ?`
-	getFilesQuery   = `SELECT id, user_id, file_name, content_type, created_at, updated_at FROM files WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`
-	deleteFileQuery = `DELETE FROM files WHERE id = ? AND user_id = ?`
-	updateFileQuery = `UPDATE files SET file_name = ?, content_type = ?, content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?`
+	saveFileQuery      = `INSERT INTO files (id, user_id, file_name, content_type, content) VALUES (?, ?, ?, ?, ?)`
+	getFileQuery       = `SELECT id, user_id, file_name, content_type, content, created_at, updated_at FROM files WHERE id = ? AND user_id = ?`
+	getFilesQuery      = `SELECT id, user_id, file_name, content_type, created_at, updated_at FROM files WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`
+	getFilesCountQuery = `SELECT COUNT(*) FROM files WHERE user_id = ?`
+	deleteFileQuery    = `DELETE FROM files WHERE id = ? AND user_id = ?`
+	updateFileQuery    = `UPDATE files SET file_name = ?, content_type = ?, content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?`
 )
 
 type File struct {
@@ -34,6 +35,9 @@ var (
 )
 
 func (r *sqliteRepo) SaveFile(ctx context.Context, userId, fileName, contentType, content string) (string, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	r.logger.Info("Saving file", "fileName", fileName, "userId", userId)
 	id := uuid.New().String()
 
@@ -95,7 +99,24 @@ func (r *sqliteRepo) GetFiles(ctx context.Context, userId string, limit, offset 
 	return files, nil
 }
 
+func (r *sqliteRepo) GetFilesCount(ctx context.Context, userId string) (int, error) {
+	r.logger.Info("Getting files count for user", "userId", userId)
+	row := r.Db.QueryRowContext(ctx, getFilesCountQuery, userId)
+
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		r.logger.Error("failed to scan files count", "userId", userId, "error", err)
+		return 0, fmt.Errorf("failed to get files count: %w", err)
+	}
+
+	return count, nil
+}
+
 func (r *sqliteRepo) DeleteFile(ctx context.Context, fileId, userId string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	r.logger.Info("Deleting file", "fileId", fileId, "userId", userId)
 	res, err := r.Db.ExecContext(ctx, deleteFileQuery, fileId, userId)
 	if err != nil {
@@ -117,6 +138,9 @@ func (r *sqliteRepo) DeleteFile(ctx context.Context, fileId, userId string) erro
 }
 
 func (r *sqliteRepo) UpdateFile(ctx context.Context, fileId, userId, fileName, contentType, content string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	r.logger.Info("Updating file", "fileId", fileId, "userId", userId)
 	res, err := r.Db.ExecContext(ctx, updateFileQuery, fileName, contentType, content, fileId, userId)
 

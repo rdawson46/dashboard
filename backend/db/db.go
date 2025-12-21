@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/charmbracelet/log"
 	"github.com/golang-migrate/migrate/v4"
@@ -18,6 +19,7 @@ var ErrDatabaseError = errors.New("database error")
 type sqliteRepo struct {
     Db *sql.DB
 	logger *log.Logger
+	mu sync.Mutex
 }
 
 func NewSqliteRepository(log *log.Logger) (*sqliteRepo, error) {

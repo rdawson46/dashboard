@@ -48,7 +48,7 @@ watch(chatMessages, async () => {
   }
 }, { deep: true });
 
-async function handleSendMessage({ content, webSearch, code }) {
+async function handleSendMessage({ content, webSearch, code, useRag, fileIds }) {
   if (!authStore.username || !authStore.id) {
     useNotify("Invalid username or id")
     return
@@ -69,7 +69,9 @@ async function handleSendMessage({ content, webSearch, code }) {
     'username': authStore.username,
     'userId': authStore.id.toString(),
     'messageId': messageId.value ? messageId.value.toString() : null,
-    'messages': apiMessages
+    'messages': apiMessages,
+    'useRag': useRag,
+    'fileIds': fileIds,
   }
 
   await useStream(body, messageId, apiMessages, chatMessages, router);

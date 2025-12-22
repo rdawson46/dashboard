@@ -71,7 +71,7 @@ export async function useStream(
                             switch (data.type) {
                                 case "Message ID":
                                     if (messageId.value) break;
-                                    const m = data.messageId;
+                                    const m = data.data;
                                     messageId.value = m;
                                     router.push({ name: "Existing Chat", params: { id: messageId.value } })
                                     break
@@ -120,7 +120,7 @@ export async function useStream(
 
                         } catch (e) {
                             console.error('Error parsing JSON:', e);
-                            notify('Error processing server response.');
+                            useNotify('Error processing server response.');
                         }
                     }
                 }
@@ -128,7 +128,7 @@ export async function useStream(
         }
     } catch (error) {
         console.error('Error during fetch:', error);
-        notify('Error when querying agent.');
+        useNotify('Error when querying agent.');
         chatMessages.value.pop();
     } 
 }

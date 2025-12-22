@@ -16,6 +16,7 @@ type OllamaClient struct {
     client *api.Client
 }
 
+
 type StreamRequest struct {
 	Query []api.Message `json:"messages"`
 	Websearch bool `json:"webSearch"`
@@ -24,6 +25,8 @@ type StreamRequest struct {
 	Username string `json:"username"`
     UserId string `json:"userId"`
     MessageId string `json:"messageId,omitempty"`
+	UseRag bool `json:"useRag,omitempty"`
+	FileIds []string `json:"fileIds,omitempty"`
 }
 
 func NewOllamaClient(_url string) (*OllamaClient, error) {

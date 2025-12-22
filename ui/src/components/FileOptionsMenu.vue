@@ -4,7 +4,7 @@ defineProps({
   rag: Boolean
 });
 
-defineEmits(['update:rag', 'trigger-upload']);
+defineEmits(['update:rag', 'trigger-upload', 'trigger-select-files']);
 </script>
 
 <template>
@@ -25,7 +25,7 @@ defineEmits(['update:rag', 'trigger-upload']);
       </label>
     </div>
 
-    <button class="menu-button" disabled>
+    <button class="menu-button" @click="$emit('trigger-select-files')">
       <i class="fa-solid fa-file-circle-check"></i>
       <span>Select Files</span>
     </button>

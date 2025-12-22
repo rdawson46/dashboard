@@ -2,6 +2,7 @@
 import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { useNotify } from '@/composables/notify.js';
 import FileOptionsMenu from './FileOptionsMenu.vue';
+import SelectFilesModal from './SelectFilesModal.vue';
 
 const props = defineProps({
   userMessageHistory: {
@@ -24,6 +25,7 @@ const uploadedFiles = ref([]);
 const showFileOptions = ref(false);
 const ragActive = ref(false);
 const fileOptionsContainer = ref(null);
+const showSelectFilesModal = ref(false);
 
 const inputContainer = ref(null);
 const inputValue = ref('');
@@ -45,6 +47,19 @@ const triggerFileOptions = () => {
 const handleTriggerUpload = () => {
   showFileOptions.value = false;
   fileInput.value.click();
+};
+
+const handleTriggerSelectFiles = () => {
+  showFileOptions.value = false;
+  showSelectFilesModal.value = true;
+};
+
+const handleAddFiles = (newFiles) => {
+    newFiles.forEach(file => {
+        if (!uploadedFiles.value.some(existingFile => existingFile.id === file.id)) {
+            uploadedFiles.value.push({ id: file.id, name: file.file_name });
+        }
+    });
 };
 
 const handleClickOutside = (event) => {
@@ -187,6 +202,12 @@ defineExpose({
 
 <template>
     <div class="chat-input-container" :class="{ 'middle': isCentered }">
+        <SelectFilesModal 
+            :show="showSelectFilesModal" 
+            :selected-files="uploadedFiles"
+            @close="showSelectFilesModal = false"
+            @add-files="handleAddFiles"
+        />
         <div class="file-pills-container">
             <div v-for="file in uploadedFiles" :key="file.id" class="file-pill">
                 <span><i class="fa-solid fa-paperclip"></i> {{ file.name }}</span>
@@ -226,6 +247,7 @@ defineExpose({
                         :open="showFileOptions"
                         v-model:rag="ragActive"
                         @trigger-upload="handleTriggerUpload"
+                        @trigger-select-files="handleTriggerSelectFiles"
                     />
                 </div>
 

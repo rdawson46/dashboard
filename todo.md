@@ -1,5 +1,14 @@
 # To Do
-* file uploads
+## Immediate
+* server send new desc for new chat with new id
+    - chat transmits a new event out to the main page
+    - main page will then pass the event to sidebar
+    - sidebar consumes
+         * trigger some kind of animation
+* server end:
+    - messages will now have to pull file content data for referenced file IDs
+
+## Delayed
 * queue around ollama to prevent overloading
 * job registration
     - code job creation

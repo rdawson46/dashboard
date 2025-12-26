@@ -145,7 +145,6 @@ func (oc OllamaClient) Chat(ctx context.Context, query string) (string, error) {
     return fullResponse, nil
 }
 
-// func (oc OllamaClient) Stream(ctx context.Context, userReq StreamRequest, model string, msgChan chan api.ChatResponse, errChan chan error) {
 func (oc OllamaClient) Stream(ctx context.Context, userReq StreamRequest, model string, msgChan chan any, errChan chan error) {
     defer close(msgChan)
     defer close(errChan)

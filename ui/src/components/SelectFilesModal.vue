@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, defineEmits, defineProps } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useNotify } from '@/composables/notify.js';
 
 const props = defineProps({

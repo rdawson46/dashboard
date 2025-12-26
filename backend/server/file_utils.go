@@ -48,7 +48,7 @@ func getTokenCount(x any) int {
 }
 
 
-func makeFileString(files []db.File) string {
+func makeFileString(files []*db.File) string {
 	var fileString = ""
 
 	for _, f := range files {
@@ -80,7 +80,11 @@ func getContextLimit(ctx context.Context, model string) float64 {
         return 0
     }
 
-	count := res.ModelInfo["general.parameter_count"]
+	count, ok := res.ModelInfo["general.parameter_count"]
+
+	if !ok {
+		return 0
+	}
 
 	if val, ok := count.(float64); ok {
 		return val
@@ -89,7 +93,7 @@ func getContextLimit(ctx context.Context, model string) float64 {
 	return 0
 }
 
-func addFileToMessages(ctx context.Context, model string, messages []ollama.Message, files[]db.File) ([]ollama.Message, bool){
+func addFileToMessages(ctx context.Context, model string, messages []ollama.Message, files[]*db.File) ([]ollama.Message, bool){
 	fileString := makeFileString(files)
 	m := messages[len(messages)-1]
 

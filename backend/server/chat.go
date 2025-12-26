@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"os"
 
+	ollama "github.com/ollama/ollama/api"
 	api "github.com/rdawson46/dashboard/api"
+	"github.com/rdawson46/dashboard/db"
 )
 
 func chatHandler(w http.ResponseWriter, r *http.Request) {
@@ -96,6 +98,24 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	file_count := len(chatReq.FileIds)
+
+	files := make([]*db.File, 0)
+	if file_count > 0 {
+		s.logger.Info("Fetching file content", "count", file_count)
+
+		for _, f := range chatReq.FileIds {
+			res, err := s.db.GetFile(r.Context(), f, user.ID)
+
+			if err != nil {
+				s.logger.Error("Error retrieving file", "FileId", f, "Error", err.Error())
+				continue
+			}
+
+			files = append(files, res)
+		}
+	}
+
 	flusher, ok := SetSSE(w)
 
 	if !ok {
@@ -119,7 +139,22 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		"Chat Id", messageId,
 	)
 
+	originalMessages := make([]ollama.Message, len(chatReq.Query))
+	copy(originalMessages, chatReq.Query)
+
+	if len(files) > 0 {
+		tempMessages, ok := addFileToMessages(r.Context(), chatReq.Model, chatReq.Query, files)
+
+		if ok {
+			chatReq.Query = tempMessages
+		}
+	}
+
 	chatResponse, err := Streamer(s, w, flusher, r, chatReq, messageId, user)
+
+	if len(originalMessages) > 0 {
+		chatReq.Query = originalMessages
+	}
 	SaveMessage(s, r, messageId, chatResponse, &chatReq, user)
 }
 

@@ -23,6 +23,12 @@ type Message_db struct {
 	Messages []ollama.Message
 }
 
+type CreateMessage struct {
+	Id string
+	Desc string
+	New bool
+}
+
 // TODO:
 type MessageErrorResponse struct {
 }
@@ -63,7 +69,7 @@ func (r *sqliteRepo) GetMessages()    {}
 func (r *sqliteRepo) GetMessageCount() {}
 func (r *sqliteRepo) UpdateMessage()  {}
 
-func (r *sqliteRepo) CreateMessage(ctx context.Context, userId, model string, messages []ollama.Message) (string, error) {
+func (r *sqliteRepo) CreateMessage(ctx context.Context, userId, model string, messages []ollama.Message) (CreateMessage, error) {
 	r.logger.Info("Creating message", "userId", userId)
 
 	desc := generateDesc(messages)
@@ -72,7 +78,7 @@ func (r *sqliteRepo) CreateMessage(ctx context.Context, userId, model string, me
 
 	if err != nil {
 		r.logger.Error("failed to marshal messages", "userId", userId)
-		return "", errors.New("Couldn't marshal messages")
+		return CreateMessage{}, errors.New("Couldn't marshal messages")
 	}
 
 	messageID := uuid.New().String()
@@ -81,10 +87,14 @@ func (r *sqliteRepo) CreateMessage(ctx context.Context, userId, model string, me
 
 	if err != nil {
 		r.logger.Error("failed to create message", "messageId", messageID, "userId", userId)
-		return "", err
+		return CreateMessage{}, err
 	}
 
-	return messageID, nil
+	return CreateMessage{
+		Id: messageID,
+		Desc: desc,
+		New: true,
+	}, nil
 }
 
 func (r *sqliteRepo) GetDescriptions(ctx context.Context, userId string, limit, offset int) (Descriptions, error) {

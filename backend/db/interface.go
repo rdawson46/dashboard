@@ -20,7 +20,7 @@ type MessageDB interface {
     GetMessages() ()
     GetMessageCount() ()
 
-    CreateMessage(ctx context.Context, userId, model string, message []ollama.Message) (string, error)
+    CreateMessage(ctx context.Context, userId, model string, message []ollama.Message) (CreateMessage, error)
     UpdateMessage() ()
 	AddMessage(ctx context.Context, messageId, userId, model string, message []ollama.Message) (bool, error)
 

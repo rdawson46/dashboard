@@ -3,6 +3,7 @@ import { markedHighlight } from "marked-highlight";
 import hljs from 'highlight.js';
 import 'highlight.js/styles/atom-one-dark.css';
 import 'vue3-toastify/dist/index.css';
+import { useChatStore } from '@/stores/chat.js';
 import { useNotify } from '@/composables/notify.js'
 
 
@@ -23,6 +24,7 @@ export async function useStream(
     chatMessages,
     router
 ) {
+    const chatStore = useChatStore();
     const url = '/api/stream'
 
     try {
@@ -72,7 +74,9 @@ export async function useStream(
                                 case "Message ID":
                                     if (messageId.value) break;
                                     const m = data.data;
-                                    messageId.value = m;
+                                    messageId.value = m.messageId;
+                                    const description = m.desc
+                                    chatStore.addChatToHistory({ id: messageId.value, description: description })
                                     router.push({ name: "Existing Chat", params: { id: messageId.value } })
                                     break
 

@@ -1,7 +1,8 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import 'vue3-toastify/dist/index.css';
 import { useAuthStore } from '@/stores/auth';
+import { useChatStore } from '@/stores/chat';
 import { RouterLink } from 'vue-router';
 import { useRouter } from 'vue-router';
 import { useNotify } from '@/composables/notify.js'
@@ -10,8 +11,9 @@ import { useUiStore } from '@/stores/ui';
 const authStore = useAuthStore();
 const router = useRouter();
 const uiStore = useUiStore();
+const chatStore = useChatStore();
 
-const history = ref([]);
+const history = computed(() => chatStore.history);
 const deletingChatId = ref(null);
 
 async function getHistory() {
@@ -62,11 +64,7 @@ async function deleteChat(chatId) {
         useNotify('Failed to delete chat')
         return
       }
-      for (let i = 0; i < history.value.length; i++) {
-        if (history.value[i].id === chatId) {
-          history.value.splice(i, 1)
-        }
-      }
+      chatStore.history = chatStore.history.filter(h => h.id !== chatId);
     } catch (e) {
       console.error('Error parsing JSON:', e);
       useNotify('Error processing server response.');
@@ -88,7 +86,9 @@ async function logout() {
 onMounted(async () => {
     try {
       const hist = await getHistory();
-      history.value = hist;
+      if (hist) {
+        chatStore.setHistory(hist);
+      }
     } catch (e) {
       console.error(e)
     }
@@ -137,7 +137,7 @@ onMounted(async () => {
         <div class="history-section" v-show="!uiStore.isSidebarCollapsed">
             <h3 class="history-title">History</h3>
             <div class="history">
-                <ul>
+                <transition-group name="history-item" tag="ul">
                     <li class="item" v-for="h in history" :key="h.id">
                         <RouterLink :to="{ name: 'Existing Chat', params: { id: h.id } }" class="history-link">
                         {{ h.description }}
@@ -145,7 +145,7 @@ onMounted(async () => {
                         <i v-if="deletingChatId === h.id" class="fa-solid fa-spinner fa-spin space"></i>
                         <i v-else class="fa-solid fa-trash space" @click="deleteChat(h.id)"></i>
                     </li>
-                </ul>
+                </transition-group>
             </div>
         </div>
 
@@ -373,5 +373,16 @@ onMounted(async () => {
 
 .item:hover i {
     visibility: visible;
+}
+
+.history-item-enter-active {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.history-item-leave-active {
+  transition: all 0.5s ease;
+}
+.history-item-enter-from, .history-item-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>

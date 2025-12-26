@@ -9,6 +9,7 @@ import (
 
 	ollama "github.com/ollama/ollama/api"
 	api "github.com/rdawson46/dashboard/api"
+	"github.com/rdawson46/dashboard/db"
 )
 
 func SetSSE(w http.ResponseWriter) (http.Flusher, bool){
@@ -23,16 +24,17 @@ func SetSSE(w http.ResponseWriter) (http.Flusher, bool){
 	return flusher, ok
 }
 
-func GetMessageID(s *Server, r *http.Request, chatReq api.StreamRequest, user *User_jwt) (string, error) {
+func GetMessageID(s *Server, r *http.Request, chatReq api.StreamRequest, user *User_jwt) (*db.CreateMessage, error) {
     // check for message id
-    var messageId string
+	var messageCreation *db.CreateMessage
     if chatReq.MessageId == "" {
         s.logger.Info(
             "Creating new chat for user", 
             "user", user.Username,
         )
 
-        id, err := s.db.CreateMessage(r.Context(), user.ID, chatReq.Model, chatReq.Query)
+		temp, err := s.db.CreateMessage(r.Context(), user.ID, chatReq.Model, chatReq.Query)
+		messageCreation = &temp
 
         if err != nil {
             s.logger.Error(
@@ -41,21 +43,22 @@ func GetMessageID(s *Server, r *http.Request, chatReq api.StreamRequest, user *U
                 "remote", r.RemoteAddr,
                 "user", user.Username,
             )
-            return "", err
+            return nil, err
         }
-
-        messageId = id
 
         s.logger.Info(
             "New Chat ID",
             "User", user.Username,
-            "Chat Id", id,
+            "Chat Id", messageCreation.Id,
         )
     } else {
-        messageId = chatReq.MessageId
+		messageCreation = &db.CreateMessage{
+			Id: chatReq.MessageId,
+			New: false,
+		}
     }
 
-	return messageId, nil
+	return messageCreation, nil
 }
 
 func SendSSEMessage(s *Server, flusher http.Flusher, w http.ResponseWriter, data any, messageType string) error {

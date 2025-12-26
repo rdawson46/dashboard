@@ -90,7 +90,8 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// NOTE: this might make it harder to update history in UI in realtime
-	messageId, err := GetMessageID(s, r, chatReq, user)
+	messageCreation, err := GetMessageID(s, r, chatReq, user)
+	messageId := messageCreation.Id
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -130,8 +131,14 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		"Chat Id", messageId,
 	)
 
-	err = SendSSEMessage(s, flusher, w, messageId, "Message ID")
-	if err != nil { return }
+	if messageCreation.New {
+		d := map[string]string{
+			"messageId": messageId,
+			"desc": messageCreation.Desc,
+		}
+		err = SendSSEMessage(s, flusher, w, d, "Message ID")
+		if err != nil { return }
+	}
 
 	s.logger.Info(
 		"Chat Id set",

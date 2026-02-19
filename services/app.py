@@ -2,12 +2,14 @@ from flask import Flask, request, jsonify
 import io
 import contextlib
 
+from loguru import logger
+
 app = Flask(__name__)
 
 @app.route("/run", methods=["POST"])
 def run_code():
     if request.json is None:
-        print('no json')
+        logger.info('no json')
         return jsonify({'error': "no json provided"})
 
     code = request.json.get('code', "")
@@ -24,7 +26,7 @@ def run_code():
             exec(code)
         return jsonify({'result': output.getvalue()})
     except Exception as e:
-        print(e)
+        logger.error(e)
         return jsonify({'error': str(e)})
 
 
@@ -35,8 +37,9 @@ def web_search():
 
     query = request.json.get('query', "")
 
-    print(query)
+    logger.info(query)
     if not query:
+        logger.info("no query provided")
         return jsonify({'error': "no query provided"})
 
     try:

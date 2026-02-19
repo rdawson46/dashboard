@@ -1,32 +1,26 @@
 # To Do
 ## Immediate
-* server send new desc for new chat with new id
-    - chat transmits a new event out to the main page
-    - main page will then pass the event to sidebar
-    - sidebar consumes
-         * trigger some kind of animation
-* server end:
-    - messages will now have to pull file content data for referenced file IDs
+* logging within ollama package
+* tools (**web search** and code execution)
+    - improve code execution prompting
+* display:
+    - loading animation gets stuck on tool calls
+    - reasoning/thinking
 
 ## Delayed
-* queue around ollama to prevent overloading
+* queue around ollama to prevent overloading (semaphore)
+* vector DB/RAG
 * job registration
     - code job creation
     - handle functions jobs
         - logging within handle functions
-* notification/background job style
+* notification/background job style - ehh
 * queue system for async tasks
     - tool execution
     - notification
-* loading animation gets stuck on tool calls
-* display:
-    - reasoning/thinking
-* tools (**web search** and code execution)
-    - improve code execution prompting
 * MCP
 * monitoring system
 * image support
-* vector DB/RAG
 * chat page styling 
     - long messages in input
     - sizing
@@ -34,5 +28,3 @@
     - scrolling while streaming
 * db
     - tokens usage
-* openai/anthropic/gemini integration
-    - openai will require more work with various api - GPT5 - response api

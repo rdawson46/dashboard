@@ -1,42 +1,83 @@
 <script setup>
-    const { role, tool_calls, content, details, loading } = defineProps(['role', 'tool_calls', 'content', 'details', 'loading'])
+import { ref, computed } from 'vue'
+const { role, tool_calls, content, details, loading } = defineProps(['role', 'tool_calls', 'content', 'details', 'loading'])
 
-    async function copyToClip(text) {
-      try {
-        await navigator.clipboard.writeText(text)
-        notify("Copied to clipboard!")
-      } catch (error) {
-        console.error(error)
-      }
+const isToolCallsExpanded = ref(false)
+
+async function copyToClip(text) {
+  try {
+    await navigator.clipboard.writeText(text)
+    notify("Copied to clipboard!")
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+const formattedToolCalls = computed(() => {
+  if (!tool_calls) {
+    return []
+  }
+  return tool_calls.map(tool => {
+    let args = tool.function.arguments
+    try {
+      const parsedArgs = JSON.parse(args)
+      args = JSON.stringify(parsedArgs, null, 2)
+    } catch (e) { /* Do nothing, leave as is */ }
+
+    let result = tool.result
+    if (result) {
+        try {
+            const parsedResult = JSON.parse(result)
+            result = JSON.stringify(parsedResult, null, 2)
+        } catch (e) { /* Do nothing, leave as is */ }
     }
+
+    return {
+      ...tool,
+      function: {
+        ...tool.function,
+        arguments: args
+      },
+      result: result,
+    }
+  })
+})
 </script>
 
 <template>
-    <div v-if="role == 'tool'" class="glass-card tool-result">
-        🔨 <b>Tool Call Response</b> 🔧
-        <br>
-        Response: {{content}}
-    </div>
+    <div v-if="role !== 'info'" :class="['message', role, { 'loading': loading && role === 'assistant' }]">
 
-    <div v-else-if="role !== 'info'" :class="['message', role, { 'loading': loading && role === 'assistant' }]">
-
-        <div v-if="tool_calls" class="glass-card tool-call">
-            🔨 <b>Tool Calls</b> 🔧
-
-            <template v-for="tool_call in tool_calls">
-                <div>
-                    {{tool_call.function.name}}
-                    <br>
-                    {{tool_call.function.arguments}}
+        <div v-if="tool_calls && tool_calls.length > 0" class="tool-calls-container">
+            <div @click="isToolCallsExpanded = !isToolCallsExpanded" class="tool-calls-header">
+                <div class="tool-calls-title">
+                    <i class="fa-solid fa-terminal"></i>
+                    <span>Tool Calls ({{ tool_calls.length }})</span>
                 </div>
-            </template>
+                <i :class="['fa-solid', isToolCallsExpanded ? 'fa-chevron-down' : 'fa-chevron-right']" class="chevron-icon"></i>
+            </div>
+            <div v-if="isToolCallsExpanded" class="tool-calls-body">
+                <div v-for="(tool_call, index) in formattedToolCalls" :key="index" class="tool-call-item">
+                    <div class="tool-call-name">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>{{ tool_call.function.name }}</span>
+                    </div>
+                    <pre><code>{{ tool_call.function.arguments }}</code></pre>
+                    <div v-if="tool_call.result" class="tool-result-in-dropdown">
+                        <div class="tool-result-header">
+                            <i class="fa-solid fa-gears"></i>
+                            <strong>Tool Result</strong>
+                        </div>
+                        <pre class="tool-result-content">{{ tool_call.result }}</pre>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div v-if="content.length" class="content-wrapper">
+        <div v-if="content && content.length" class="content-wrapper">
             <span v-html="content"></span>
         </div>
 
-        <div v-if="(!tool_calls || !tool_calls.length) && !content.length" class="spinner">
+        <div v-if="loading && (!content || !content.length)" class="spinner">
             <div class="dot"></div>
             <div class="dot"></div>
             <div class="dot"></div>
@@ -111,12 +152,33 @@
     }
 }
 
-.tool-call, .tool-result {
-    padding: 1rem;
+.tool-result-header {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
 }
 
-.tool-result {
-    width: 85%;
+.tool-result-in-dropdown .tool-result-header {
+    border-top: 1px solid var(--border-color);
+    border-bottom: none;
+}
+
+.tool-result-header i {
+    margin-right: 0.5rem;
+}
+
+.tool-result-content {
+    padding: 1rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background-color: #1e293b !important;
+    color: #f8fafc;
+    margin: 0;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
 }
 
 .message {
@@ -205,6 +267,64 @@
 .info-icon:hover .tooltip {
   opacity: 1;
   visibility: visible;
+}
+
+.tool-calls-container {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border-color);
+}
+
+.tool-calls-header {
+    padding: 10px 15px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.tool-calls-header:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.tool-calls-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: bold;
+}
+
+.chevron-icon {
+    transition: transform 0.2s ease;
+}
+
+.tool-calls-body {
+    padding: 0 15px 15px;
+}
+
+.tool-call-item {
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 6px;
+    margin-top: 10px;
+}
+
+.tool-call-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    padding: 8px 12px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+.tool-call-item pre {
+    margin: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
 }
 </style>
 

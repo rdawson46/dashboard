@@ -83,40 +83,57 @@ export async function useStream(
                                 case "response":
                                     data = data.data
 
+                                    if (data.message.tool_calls) {
+                                        assistantMessage.tool_calls = data.message.tool_calls;
+                                        assistantMessage.loading = false; // Stop loading animation on message with tool calls
+                                    }
+
+                                    if (data.message.content) {
+                                        let token = data.message.content;
+                                        fullResponse += token;
+                                        assistantMessage.content = marked.parse(fullResponse);
+                                    }
+
                                     if (data.done) {
-                                        if (data.message.content.length) {
-                                            fullResponse += data.message.content
-                                            assistantMessage.content = marked.parse(fullResponse);
+                                        if (assistantMessage.content) {
+                                            apiMessages.push({ 'role': 'assistant', 'content': assistantMessage.content });
                                         }
                                         assistantMessage.loading = false;
-                                        apiMessages.push({ 'role': 'assistant', 'content': fullResponse });
 
-                                        chatMessages.value.push({ role: 'info', content: fullResponse, details: data });
+                                        chatMessages.value.push({ role: 'info', content: assistantMessage.content, details: data });
                                         return;
                                     }
-
-                                    if (data.message.tool_calls) {
-                                        console.log(data)
-                                        for (const toolCall of data.message.tool_calls) {
-                                            let { name } = toolCall;
-                                            console.log(toolCall)
-                                        }
-                                        assistantMessage.tool_calls = data.message.tool_calls
-                                        continue
-                                    }
-
-                                    let token = data.message.content;
-                                    fullResponse += token;
-                                    assistantMessage.content = marked.parse(fullResponse);
                                     break;
 
                                 case "message":
-                                    data = data.data
+                                    const toolResult = data.data;
 
-                                    // will need to append this message to the chat
-                                    chatMessages.value.push(data);
-                                    chatMessages.value.push({ role: 'assistant', content: '' });
-                                    break
+                                    // Find the assistant message that contains the tool calls
+                                    const assistantMessageWithTools = chatMessages.value.find(
+                                        msg => msg.role === 'assistant' && msg.tool_calls && !msg.content
+                                    );
+
+                                    if (assistantMessageWithTools && assistantMessageWithTools.tool_calls) {
+                                        const toolCall = assistantMessageWithTools.tool_calls.find(
+                                            tc => tc.id === toolResult.tool_call_id
+                                        );
+
+                                        if (toolCall) {
+                                            toolCall.result = toolResult.content;
+                                        } else {
+                                            // Fallback to prevent data loss if no match is found
+                                            chatMessages.value.push(toolResult);
+                                        }
+                                    } else {
+                                        chatMessages.value.push(toolResult);
+                                    }
+                                    
+                                    // Ensure there's a placeholder for the next assistant response, but don't create duplicates.
+                                    const lastMessage = chatMessages.value[chatMessages.value.length - 1];
+                                    if (!lastMessage || lastMessage.role !== 'assistant' || lastMessage.content || lastMessage.tool_calls) {
+                                        chatMessages.value.push({ role: 'assistant', content: '', loading: true });
+                                    }
+                                    break;
                                 default:
                                     console.log(data)
                                     break

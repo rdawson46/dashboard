@@ -68,7 +68,7 @@ func getContextLimit(ctx context.Context, model string) float64 {
         return 0
 	}
 
-    oc, err := api.NewOllamaClient(url)
+    oc, err := api.NewOllamaClient(url, nil)
 
     if err != nil {
         return 0

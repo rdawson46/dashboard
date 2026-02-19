@@ -78,7 +78,7 @@ func handleLLMTask(task *Task) taskResultType {
 		}
 	}
 
-    oc, err := api.NewOllamaClient(url)
+    oc, err := api.NewOllamaClient(url, nil)
 
 	if err != nil {
 		return taskResultType{

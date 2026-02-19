@@ -77,7 +77,7 @@ func generateDesc(message []ollama.Message) string {
 	//
 	ctx := context.Background()
 
-    oc, err := api.NewOllamaClient(url)
+    oc, err := api.NewOllamaClient(url, nil)
 
 	if err != nil {
 		var desc string

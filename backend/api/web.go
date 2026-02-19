@@ -19,7 +19,6 @@ func WebSearch(query string) (*ToolResult, error) {
 		return nil, err
 	}
 
-	// TODO: rename this route 
 	url := os.Getenv("CODE_URL")
 
 	if url == "" {

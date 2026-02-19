@@ -95,7 +95,7 @@ func Streamer(s *Server, w http.ResponseWriter, flusher http.Flusher, r *http.Re
 
 	ctx := r.Context()
 
-	oc, err := api.NewOllamaClient(url)
+	oc, err := api.NewOllamaClient(url, s.logger)
 
 	if err != nil {
 		s.logger.Error(err.Error())

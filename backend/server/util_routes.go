@@ -38,7 +38,7 @@ func (s *Server) modelListHandler(w http.ResponseWriter, r *http.Request) {
 
     ctx := r.Context()
 
-    oc, err := api.NewOllamaClient(url)
+    oc, err := api.NewOllamaClient(url, s.logger)
 
     if err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest)
@@ -96,7 +96,7 @@ func modelShowHandler(w http.ResponseWriter, r *http.Request) {
 
     ctx := r.Context()
 
-    oc, err := api.NewOllamaClient(url)
+    oc, err := api.NewOllamaClient(url, nil)
 
     if err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest)

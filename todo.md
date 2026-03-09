@@ -1,14 +1,10 @@
 # To Do
 ## Immediate
-* logging within ollama package
-* tools (**web search** and code execution)
-    - improve code execution prompting
 * display:
     - loading animation gets stuck on tool calls
     - reasoning/thinking
 
 ## Delayed
-* queue around ollama to prevent overloading (semaphore)
 * vector DB/RAG
 * job registration
     - code job creation

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/rdawson46/dashboard/api"
 	db "github.com/rdawson46/dashboard/db"
 	"golang.org/x/time/rate"
 )
@@ -17,15 +18,17 @@ type ServerConfig struct {
     ShutdownTimeout time.Duration
     RateLimitReq float64
     RateLimitBurst int
+    MaxConcurrentOllamaClients int
 }
 
 
-func NewConfig(port, rateLimitBurst int, rateLimitReq float64, shutdownTimeout time.Duration) ServerConfig {
+func NewConfig(port, rateLimitBurst int, rateLimitReq float64, shutdownTimeout time.Duration, maxConcurrentOllamaClients int) ServerConfig {
     return ServerConfig {
         Port: port,
         ShutdownTimeout: shutdownTimeout,
         RateLimitBurst: rateLimitBurst,
         RateLimitReq: rateLimitReq,
+        MaxConcurrentOllamaClients: maxConcurrentOllamaClients,
     }
 }
 
@@ -43,6 +46,8 @@ func NewServer(config ServerConfig, db db.Repository, logger *log.Logger) *Serve
 		os.Getenv("JWT_KEY"),
         time.Minute*30,
     )
+
+    api.InitOllamaSemaphore(config.MaxConcurrentOllamaClients)
 
     return &Server{
         config: config,

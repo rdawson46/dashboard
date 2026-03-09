@@ -32,7 +32,7 @@ func run() error {
 	
 	defer sqliteDb.Close()
 
-    config := server.NewConfig(8000, 300, 100, 100)
+    config := server.NewConfig(8000, 300, 100, 100, 1)
     s := server.NewServer(config, db.Repository(sqliteDb), logger)
 
     if err := s.Start(); err != nil {

@@ -8,11 +8,41 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sync"
 
 	"github.com/charmbracelet/log"
 	"github.com/ollama/ollama/api"
 	ollamaModel "github.com/ollama/ollama/types/model"
 )
+
+var (
+    ollamaSemaphore chan struct{}
+    semOnce         sync.Once
+)
+
+func InitOllamaSemaphore(maxConcurrent int) {
+    semOnce.Do(func() {
+        ollamaSemaphore = make(chan struct{}, maxConcurrent)
+    })
+}
+
+func acquireSemaphore(ctx context.Context) error {
+    if ollamaSemaphore == nil {
+        return nil
+    }
+    select {
+    case ollamaSemaphore <- struct{}{}:
+        return nil
+    case <-ctx.Done():
+        return ctx.Err()
+    }
+}
+
+func releaseSemaphore() {
+    if ollamaSemaphore != nil {
+        <-ollamaSemaphore
+    }
+}
 
 type OllamaClient struct {
     client *api.Client
@@ -144,6 +174,13 @@ func (oc OllamaClient) GetShow(ctx context.Context, model string) (*ShowResponse
 
 func (oc OllamaClient) Chat(ctx context.Context, query string) (string, error) {
     oc.logger.Info("Starting chat", "query", query)
+    
+    if err := acquireSemaphore(ctx); err != nil {
+        oc.logger.Error("Failed to acquire semaphore", "error", err)
+        return "", err
+    }
+    defer releaseSemaphore()
+
     req := oc.newRequest(query, &[]bool{false}[0])
 
 	if req == nil {
@@ -172,6 +209,14 @@ func (oc OllamaClient) Stream(ctx context.Context, userReq StreamRequest, model 
     defer close(errChan)
 
     oc.logger.Info("Starting stream", "model", model, "user", userReq.Username)
+
+    if err := acquireSemaphore(ctx); err != nil {
+        oc.logger.Error("Failed to acquire semaphore", "error", err)
+        errChan <- err
+        return
+    }
+    defer releaseSemaphore()
+
     req := oc.newRequestWithMessages(userReq.Query, model, true)
 
 	tools := api.Tools{}

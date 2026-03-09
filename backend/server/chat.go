@@ -83,12 +83,6 @@ func (s *Server) streamHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Username != chatReq.Username {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"Error": "Invalid username"})
-		return
-	}
-
 	// NOTE: this might make it harder to update history in UI in realtime
 	messageCreation, err := GetMessageID(s, r, chatReq, user)
 	messageId := messageCreation.Id

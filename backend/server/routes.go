@@ -42,9 +42,15 @@ func addRoutes(h *http.ServeMux, s *Server) {
 		h.Handle(path, s.jwt_manager.AuthMiddleware(handler))
 	}
 
+	addAuthAndLimiting := func(path string, handler http.HandlerFunc) {
+		h.Handle(path, s.rateLimitMiddleware(
+			s.jwt_manager.AuthMiddleware(handler),
+		))
+	}
+
 	// chat and model routes
-	addAuthRoute("/api/chat", s.rateLimitMiddleware(http.HandlerFunc(chatHandler)))
-	addAuthRoute("/api/stream", s.streamHandler)
+	addAuthAndLimiting("/api/chat", http.HandlerFunc(chatHandler))
+	addAuthAndLimiting("/api/stream", s.streamHandler)
 	addAuthRoute("/api/modelList", s.modelListHandler)
 	addAuthRoute("/api/modelInfo", modelShowHandler)
 	addAuthRoute("/api/chatDescription", s.chatDescriptionHandler)
@@ -60,7 +66,6 @@ func addRoutes(h *http.ServeMux, s *Server) {
 	addAuthRoute("/api/viewJob", s.viewJob)
 
 	// file routes
-
 	addAuthRoute("/api/uploadFile", s.uploadFile)
 	addAuthRoute("/api/getFileList", s.getFileList)
 	addAuthRoute("/api/getFile", s.getFile)

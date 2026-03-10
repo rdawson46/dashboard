@@ -11,10 +11,6 @@
     - handle functions jobs
         - logging within handle functions
 * notification/background job style - ehh
-* queue system for async tasks
-    - tool execution
-    - notification
-* MCP
 * monitoring system
 * image support
 * chat page styling 

@@ -1,23 +1,28 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useNotify } from '@/composables/notify.js'
 const { role, tool_calls, content, details, loading } = defineProps(['role', 'tool_calls', 'content', 'details', 'loading'])
-
-const isToolCallsExpanded = ref(false)
 
 async function copyToClip(text) {
   try {
     await navigator.clipboard.writeText(text)
-    notify("Copied to clipboard!")
+    useNotify("Copied to clipboard!")
   } catch (error) {
     console.error(error)
   }
+}
+
+const expandedToolCalls = ref({})
+
+function toggleToolCall(index) {
+  expandedToolCalls.value[index] = !expandedToolCalls.value[index]
 }
 
 const formattedToolCalls = computed(() => {
   if (!tool_calls) {
     return []
   }
-  return tool_calls.map(tool => {
+  return tool_calls.map((tool, index) => {
     let args = tool.function.arguments
     try {
       const parsedArgs = JSON.parse(args)
@@ -39,6 +44,7 @@ const formattedToolCalls = computed(() => {
         arguments: args
       },
       result: result,
+      isExpanded: !!expandedToolCalls.value[index]
     }
   })
 })
@@ -47,27 +53,27 @@ const formattedToolCalls = computed(() => {
 <template>
     <div v-if="role !== 'info'" :class="['message', role, { 'loading': loading && role === 'assistant' }]">
 
-        <div v-if="tool_calls && tool_calls.length > 0" class="tool-calls-container">
-            <div @click="isToolCallsExpanded = !isToolCallsExpanded" class="tool-calls-header">
-                <div class="tool-calls-title">
-                    <i class="fa-solid fa-terminal"></i>
-                    <span>Tool Calls ({{ tool_calls.length }})</span>
-                </div>
-                <i :class="['fa-solid', isToolCallsExpanded ? 'fa-chevron-down' : 'fa-chevron-right']" class="chevron-icon"></i>
-            </div>
-            <div v-if="isToolCallsExpanded" class="tool-calls-body">
-                <div v-for="(tool_call, index) in formattedToolCalls" :key="index" class="tool-call-item">
-                    <div class="tool-call-name">
-                        <i class="fa-solid fa-bolt"></i>
-                        <span>{{ tool_call.function.name }}</span>
-                    </div>
-                    <pre><code>{{ tool_call.function.arguments }}</code></pre>
-                    <div v-if="tool_call.result" class="tool-result-in-dropdown">
-                        <div class="tool-result-header">
-                            <i class="fa-solid fa-gears"></i>
-                            <strong>Tool Result</strong>
+        <div v-if="tool_calls && tool_calls.length > 0" class="tool-calls-list">
+            <div v-for="(tool_call, index) in formattedToolCalls" :key="index" class="tool-call-item">
+                <div @click="toggleToolCall(index)" class="tool-call-header">
+                    <div class="tool-call-info">
+                        <div class="tool-icon">
+                            <i class="fa-solid fa-screwdriver-wrench"></i>
                         </div>
-                        <pre class="tool-result-content">{{ tool_call.result }}</pre>
+                        <span class="tool-text">Used <strong>{{ tool_call.function.name }}</strong></span>
+                    </div>
+                    <div class="tool-action">
+                        <i :class="['fa-solid', tool_call.isExpanded ? 'fa-chevron-up' : 'fa-chevron-down']" class="chevron-icon"></i>
+                    </div>
+                </div>
+                <div v-if="tool_call.isExpanded" class="tool-call-details">
+                    <div class="details-section">
+                        <div class="details-label">Input</div>
+                        <pre><code>{{ tool_call.function.arguments }}</code></pre>
+                    </div>
+                    <div v-if="tool_call.result" class="details-section">
+                        <div class="details-label">Output</div>
+                        <pre class="tool-result-content"><code>{{ tool_call.result }}</code></pre>
                     </div>
                 </div>
             </div>
@@ -152,37 +158,8 @@ const formattedToolCalls = computed(() => {
     }
 }
 
-.tool-result-header {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 0.9rem;
-    color: var(--text-color-secondary);
-}
-
-.tool-result-in-dropdown .tool-result-header {
-    border-top: 1px solid var(--border-color);
-    border-bottom: none;
-}
-
-.tool-result-header i {
-    margin-right: 0.5rem;
-}
-
-.tool-result-content {
-    padding: 1rem;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    background-color: #1e293b !important;
-    color: #f8fafc;
-    margin: 0;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
-}
-
 .message {
-    padding: 5px 15px;
+    padding: 12px 16px;
     margin-bottom: 12px;
     border-radius: 12px;
     word-wrap: break-word;
@@ -269,62 +246,99 @@ const formattedToolCalls = computed(() => {
   visibility: visible;
 }
 
-.tool-calls-container {
-    background-color: rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    margin-bottom: 10px;
-    border: 1px solid var(--border-color);
-}
-
-.tool-calls-header {
-    padding: 10px 15px;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: background-color 0.2s ease;
-}
-
-.tool-calls-header:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-}
-
-.tool-calls-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: bold;
-}
-
-.chevron-icon {
-    transition: transform 0.2s ease;
-}
-
-.tool-calls-body {
-    padding: 0 15px 15px;
+.tool-calls-list {
+    margin-bottom: 12px;
+    width: 100%;
 }
 
 .tool-call-item {
-    background-color: rgba(0, 0, 0, 0.15);
-    border-radius: 6px;
-    margin-top: 10px;
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    width: 100%;
 }
 
-.tool-call-name {
+.tool-call-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.tool-call-header:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.tool-call-info {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-weight: 500;
-    padding: 8px 12px;
-    background-color: rgba(255, 255, 255, 0.05);
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
+    gap: 12px;
+}
+
+.tool-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(109, 40, 217, 0.15);
+    color: var(--primary-color-light);
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.tool-text {
+    font-size: 0.95rem;
+    color: var(--text-color);
+}
+
+.tool-action {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0.7;
+}
+
+.chevron-icon {
+    font-size: 0.8rem;
+    transition: transform 0.2s ease;
+}
+
+.tool-call-details {
+    padding: 0 14px 14px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-top: 1px solid var(--border-color);
+}
+
+.details-section {
+    margin-top: 12px;
+}
+
+.details-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-color);
+    opacity: 0.5;
+    margin-bottom: 6px;
+    letter-spacing: 0.05em;
 }
 
 .tool-call-item pre {
     margin: 0;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
+    padding: 10px;
+    font-size: 0.85rem;
+    background-color: #0f172a !important;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tool-result-content {
+    margin-top: 4px;
 }
 </style>
 

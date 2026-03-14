@@ -2,3 +2,5 @@
 app
 */cookies.txt
 *.sqlite
+
+*coverage*

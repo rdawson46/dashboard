@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
 	"sync"
 
 	"github.com/charmbracelet/log"
@@ -22,9 +21,8 @@ type sqliteRepo struct {
 	mu sync.Mutex
 }
 
-func NewSqliteRepository(log *log.Logger) (*sqliteRepo, error) {
+func NewSqliteRepository(log *log.Logger, db_url, migration_path string) (*sqliteRepo, error) {
 	l := log.WithPrefix("")
-	db_url := os.Getenv("DB_URL")
 
 	if db_url == "" {
 		return nil, errors.New("No DB URL found in env")
@@ -38,7 +36,7 @@ func NewSqliteRepository(log *log.Logger) (*sqliteRepo, error) {
 
     // migrations
     m, err := migrate.New(
-        "file://db/migrations", // TODO: move migrations dir and name files
+        migration_path,
         fmt.Sprintf("sqlite://%s", db_url),
     )
 

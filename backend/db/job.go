@@ -18,7 +18,7 @@ var (
 	getJobsQuery = `SELECT id, name, user_id, task, model, status, time, freq, result FROM jobs WHERE user_id = ? LIMIT ? OFFSET ?`
 	updateJobQuery = `UPDATE jobs SET task = ?, model = ?, status = ?, time = ?, freq = ?, result = ? WHERE id = ? AND user_id = ?`
 	deleteJobQuery = `DELETE FROM jobs WHERE id = ? AND user_id = ?`
-	peekJobQuery = `SELECT id, user_id, task, model, status, time, freq, result FROM jobs WHERE status = 'pending' AND datetime(time) <= CURRENT_TIMESTAMP ORDER BY created_at ASC LIMIT 1`
+	peekJobQuery = `SELECT id, user_id, task, model, status, time, freq, result FROM jobs WHERE status = 'Pending' AND datetime(time) <= CURRENT_TIMESTAMP ORDER BY created_at ASC LIMIT 1`
 	updateJobStatusQuery = `UPDATE jobs SET status = ? WHERE id = ?`
 	getCountQuery = `Select COUNT(*) FROM jobs WHERE user_id = ?`
 )
@@ -29,7 +29,7 @@ func (r *sqliteRepo) CreateJob(ctx context.Context, userId string, job *jobs.Job
 	r.logger.Info("Creating job", "userId", userId, "jobId", jobId)
 
 	if job.Status == "" {
-		job.Status = "pending"
+		job.Status = jobs.StatusPending
 	}
 
 	if job.Time == "" {
@@ -169,7 +169,7 @@ func (r *sqliteRepo) Peek(ctx context.Context) (*jobs.Job, error) {
 		return nil, err
 	}
 
-	_, err = tx.ExecContext(ctx, updateJobStatusQuery, "running", job.Id)
+	_, err = tx.ExecContext(ctx, updateJobStatusQuery, jobs.StatusRunning, job.Id)
 	if err != nil {
 		r.logger.Error("failed to update job status", "jobId", job.Id)
 		return nil, err
@@ -179,6 +179,8 @@ func (r *sqliteRepo) Peek(ctx context.Context) (*jobs.Job, error) {
 		r.logger.Error("failed to commit transaction", "jobId", job.Id)
 		return nil, err
 	}
+
+	job.Status = jobs.StatusRunning
 
 	err = json.Unmarshal([]byte(task), &job.Task)
 	if err != nil {

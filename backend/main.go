@@ -19,7 +19,7 @@ func run() error {
         ReportCaller: true,
     })
 
-	sqliteDb, err := db.NewSqliteRepository(logger)
+	sqliteDb, err := db.NewSqliteRepository(logger, os.Getenv("DB_URL"), "file://db/migrations")
 
 	if err != nil {
 		return err
